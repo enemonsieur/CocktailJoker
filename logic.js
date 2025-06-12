@@ -527,13 +527,11 @@ async function exportMenu() {
     // Send data to Google Sheets
     try {
       const response = await fetch(ENDPOINT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(menuData)
-
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },   // ← no pre-flight
+        body: JSON.stringify(menuData)               // string is fine
       });
+
       
       // Show success message
       displayMessage(`Menu sauvegardé avec le code: ${code}`, 'success');
