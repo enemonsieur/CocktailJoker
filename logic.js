@@ -1,4 +1,5 @@
 // logic.js
+const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbx5I6Pa5ay3-vF3JueYGQjo4NReWL3YQmRr73EGjKG-Q7CzYfQlt12eTA2npmkpAPYC7w/exec";
 let selected = []; // Holds the user's chosen cocktails
 let showAllCocktails = false; // Tracks if we should show all cocktails or just popular ones
 
@@ -484,46 +485,82 @@ function generateMenu() {
           }).join('')}
         </tbody>
       </table>
-    </div>
-
-    <div id="export-section" class="text-center mb-8">
-      <button onclick="exportMenu()" class="bg-green-500 hover:bg-green-600 text-white font-bold px-6 py-3 rounded-lg transition-colors duration-150 text-lg">
-        Sauvegarder Votre Menu et Marges
-      </button>
-    </div>
-  `;
+    </div>`;
 }
 
 async function exportMenu() {
-  if (!selected.length) {
-    displayMessage('Sélectionnez au moins un cocktail.', 'error');
-    return;
-  }
-  const code = generateCode();
-  const menuData = selected.map(c => ({
-    name:       c.name,
-    price:      c.price,
-    cost:       calcTotalCost(c),
-    margin:     c.price - calcTotalCost(c),
-    popularity: c.popularity,
-    ingredients: c.ingredients
-  }));
+  console.log("Export button clicked");
+  
+  // Show loading state
+  const exportBtn = document.querySelector('#export-section button');
+  const originalText = exportBtn.textContent;
+  exportBtn.disabled = true;
+  exportBtn.innerHTML = '<span class="loading">Enregistrement...</span>';
   
   try {
-    // Save to localStorage
-    const menuToSave = {
-      timestamp: new Date().toISOString(),
-      cocktails: menuData
+    if (!selected.length) {
+      throw new Error('Veuillez sélectionner au moins un cocktail');
+    }
+    
+    const code = generateCode();
+    
+    // Prepare data in the format expected by Google Apps Script
+    const menuData = {
+      code: code,
+      payload: {
+        cocktails: selected.map(c => ({
+          name: c.name,
+          price: c.price,
+          cost: calcTotalCost(c),
+          margin: c.price - calcTotalCost(c),
+          popularity: c.popularity,
+          ingredients: c.ingredients.map(i => ({
+            name: i.name,
+            volume: i.volume,
+            unit: i.unit || 'cl'
+          }))
+        })),
+        timestamp: new Date().toISOString()
+      }
     };
-    localStorage.setItem(`menu_${code}`, JSON.stringify(menuToSave));
-    displayMessage(`Menu sauvegardé localement sous le code ${code}`, 'success');
-    window.open(`https://wa.me/237694218017?text=Votre%20code%20${code}`, '_blank');
-  } catch (e) {
-    console.error('Erreur lors de la sauvegarde locale:', e);
-    displayMessage('Erreur lors de la sauvegarde locale du menu.', 'error');
+    
+    // Send data to Google Sheets
+    try {
+      const response = await fetch(ENDPOINT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(menuData)
+
+      });
+      
+      // Show success message
+      displayMessage(`Menu sauvegardé avec le code: ${code}`, 'success');
+      
+      // Open WhatsApp after a short delay
+      setTimeout(() => {
+        window.open(`https://wa.me/237694218017?text=Votre%20code%20${code}`, '_blank');
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      // Still open WhatsApp even if we can't confirm the save
+      window.open(`https://wa.me/237694218017?text=Votre%20code%20${code}`, '_blank');
+      displayMessage(`Menu partagé avec le code: ${code} (sauvegarde non confirmée)`, 'info');
+    }
+    
+  } catch (error) {
+    console.error('Erreur lors de la préparation du menu:', error);
+    displayMessage(error.message || 'Une erreur est survenue', 'error');
+  } finally {
+    // Restore button state
+    if (exportBtn) {
+      exportBtn.disabled = false;
+      exportBtn.textContent = originalText;
+    }
   }
 }
-window.exportMenu = exportMenu;
 
 // Update ingredient purchase info (price or buyVolume)
 function updateIngredientPurchase(ingredientName, field, value) {
@@ -532,6 +569,14 @@ function updateIngredientPurchase(ingredientName, field, value) {
     renderSelected();
   }
 }
+
+// Generate a random code for menu identification
+function generateCode() {
+  return Math.random().toString(36).substr(2, 6).toUpperCase();
+}
+
+// Make exportMenu available globally
+window.exportMenu = exportMenu;
 
 // Initialize the app when the page loads
 document.addEventListener('DOMContentLoaded', () => {
@@ -559,4 +604,40 @@ function displayMessage(message, type = 'info') {
 
 }
 
+async function sendTestCocktail() {
+  const testPayload = {
+    code: "TEST_MENU",
+    payload: {
+      cocktails: [
+        {
+          name: "Gin Tonic",
+          price: 1200,
+          cost: 400,
+          margin: 800,
+          popularity: 4,
+          ingredients: [
+            { name: "Gin", volume: 4, unit: "cl" },
+            { name: "Tonic", volume: 10, unit: "cl" }
+          ]
+        }
+      ],
+      timestamp: new Date().toISOString()
+    }
+  };
+
+  try {
+    const response = await fetch(ENDPOINT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(testPayload)
+    });
+
+    const result = await response.json();
+    console.log("✅ Success:", result);
+    alert(`✅ ${result.message || "Saved!"}`);
+  } catch (error) {
+    console.error("💥 Error sending:", error);
+    alert("💥 Failed: " + error.message);
+  }
+}
 
