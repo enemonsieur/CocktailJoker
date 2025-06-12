@@ -626,7 +626,7 @@ async function sendTestCocktail() {
   try {
     const response = await fetch(ENDPOINT_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(testPayload)
     });
 
