@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Optimisateur de Marges de Cocktails</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 text-gray-800 p-4 md:p-8">
+
+  <!-- Cocktail list buttons will mount here -->
+  <div id="cocktail-list" class="container mx-auto max-w-4xl mb-8"></div>
+
+  <!-- Selected cocktails & cost analysis will mount here -->
+  <div id="selected-cocktails" class="container mx-auto max-w-4xl mb-8"></div>
+
+  <!-- Generate summary button -->
+  <div class="text-center my-8">
+    <button onclick="generateMenu()"
+      class="bg-indigo-600 text-white font-bold px-6 py-3 rounded-lg shadow-md hover:bg-indigo-700">
+      Générer le Résumé du Menu
+    </button>
+  </div>
+
+  <!-- Export (save & WhatsApp) button -->
+  <div id="export-section" class="text-center mb-8">
+    <button onclick="exportMenu()" class="bg-green-500 hover:bg-green-600 text-white font-bold px-6 py-3 rounded-lg">
+      Sauvegarder Votre Menu et Marges
+    </button>
+  </div>
+
+  <!-- Summary table will mount here -->
+  <div id="menu-summary" class="container mx-auto max-w-4xl"></div>
+
+  <!-- Data definitions, then app logic -->
+  <script src="data.js"></script>
+  <script src="logic.js"></script>
+
+</body>
+
+</html>
