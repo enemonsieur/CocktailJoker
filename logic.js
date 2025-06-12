@@ -1,5 +1,5 @@
 // logic.js
-const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbx5I6Pa5ay3-vF3JueYGQjo4NReWL3YQmRr73EGjKG-Q7CzYfQlt12eTA2npmkpAPYC7w/exec";
+const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbw7yxJ0Ij4mTXuGPQo6B-EtiiUOkRPsR7Fy8XNM9C7JVHxeWtowCCQfJ4JUYXh0sTPJ/exec";
 let selected = []; // Holds the user's chosen cocktails
 let showAllCocktails = false; // Tracks if we should show all cocktails or just popular ones
 
