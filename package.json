@@ -4,5 +4,9 @@
   "description": "cocktail margin optimizer",
   "scripts": {
     "test": "jest"
+  },
+  "dependencies": {
+    "jest": "^29.6.1",
+    "jest-environment-jsdom": "^29.6.1"
   }
 }
