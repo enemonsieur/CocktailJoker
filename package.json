@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "description": "cocktail margin optimizer",
   "scripts": {
-    "test": "echo \"No tests specified\""
+    "test": "jest"
   }
 }
