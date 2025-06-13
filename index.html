@@ -10,7 +10,7 @@
 
 <body class="bg-gray-100 text-gray-800">
 
-  <div class="max-w-screen-sm mx-auto px-4 py-4 md:py-8">
+  <div class="max-w-screen-lg mx-auto px-4 py-4 md:py-8">
 
   <!-- Cocktail list buttons will mount here -->
   <div id="cocktail-list" class="mb-8"></div>
@@ -20,13 +20,14 @@
 
   <!-- Inputs for sales estimation -->
   <div id="sales-inputs" class="mb-6 border-b border-gray-300 pb-4 grid grid-cols-2 gap-4">
+    <p class="text-sm font-semibold mb-2 col-span-2">Estimez vos ventes pour mieux calculer vos marges</p>
     <div>
       <p class="text-sm font-medium mb-1">Week-end</p>
-      <input id="weekend-input" type="number" class="w-full p-2 border rounded">
+      <input id="weekend-input" type="number" title="Cocktails vendus le samedi et dimanche" class="w-full p-2 border rounded">
     </div>
     <div>
       <p class="text-sm font-medium mb-1">Semaine</p>
-      <input id="weekday-input" type="number" class="w-full p-2 border rounded">
+      <input id="weekday-input" type="number" title="Cocktails vendus du lundi au vendredi" class="w-full p-2 border rounded">
     </div>
   </div>
 

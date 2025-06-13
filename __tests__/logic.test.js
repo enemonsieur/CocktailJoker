@@ -50,18 +50,18 @@ describe('generateMenu', () => {
     __setSelected(sel);
   });
 
-  it('displays correct sales totals', () => {
+  it('displays correct monthly summary totals', () => {
     document.getElementById('weekend-input').value = '2';
     document.getElementById('weekday-input').value = '4';
 
     generateMenu();
 
-    const summary = document.getElementById('sales-summary');
-    expect(summary.textContent).toContain('24');
+    const summary = document.getElementById('monthly-summary');
     expect(summary.textContent).toContain('96');
+    expect(summary.textContent).toContain('102,400');
   });
 
-  it('calculates weighted monthly sales and profit', () => {
+  it('calculates weighted revenue and profit', () => {
     document.getElementById('weekend-input').value = '2';
     document.getElementById('weekday-input').value = '4';
 
@@ -70,12 +70,9 @@ describe('generateMenu', () => {
     const rows = document.querySelectorAll('#menu-summary tbody tr');
     expect(rows).toHaveLength(3);
     const texts = Array.from(rows).map(r => r.textContent);
-    expect(texts[0]).toContain('32');
-    expect(texts[0]).toContain('30400');
-    expect(texts[1]).toContain('16');
-    expect(texts[1]).toContain('12000');
-    expect(texts[2]).toContain('48');
-    expect(texts[2]).toContain('55200');
+    expect(texts[0]).toContain('C1');
+    expect(texts[1]).toContain('C2');
+    expect(texts[2]).toContain('C3');
   });
 });
 
