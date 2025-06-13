@@ -2,16 +2,14 @@
 const fs = require('fs');
 const { generateMenu, __setSelected, renderCocktailList } = require('../logic.js');
 
-test('Monthly summary shows up above the margin box', () => {
+test('Monthly summary shows below the margin objective', () => {
   document.body.innerHTML = fs.readFileSync('index.html', 'utf8');
-  const menu = document.getElementById('menu-summary');
   document.body.innerHTML += '<input id="weekend-input" value="1"/><input id="weekday-input" value="1"/>';
   __setSelected([{ name: 'Test', price: 1000, popularity: 1, ingredients: [] }]);
   generateMenu();
-  const monthly = document.getElementById('monthly-summary');
-  const header = document.querySelector('h3');
-  expect(monthly && header).toBeTruthy();
-  expect(monthly.compareDocumentPosition(header) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  const summaryBox = document.querySelector('#monthly-summary');
+  const marginBox = [...document.querySelectorAll('.bg-blue-50')][0];
+  expect(marginBox.nextElementSibling).toBe(summaryBox);
 });
 
 test('Summary table omits redundant columns', () => {
@@ -34,4 +32,13 @@ test('Clicking on a selected cocktail removes it', () => {
   btn.click();
   const updated = document.querySelector('#cocktail-list button');
   expect(updated.textContent.startsWith('+')).toBe(true);
+});
+
+test('Monthly KPI color reflects low margin', () => {
+  document.body.innerHTML = '<div id="menu-summary"></div><input id="weekend-input" value="1"/><input id="weekday-input" value="1"/>';
+  global.masterIngredients = { I: { unitServed: "cl", buyVolume: 1, buyUnit: "liter", price: 1000 } };
+  __setSelected([{ name: 'T', price: 100, popularity: 5, ingredients: [{ name: 'I', volume: 10 }] }]);
+  generateMenu();
+  const span = document.querySelector('#monthly-summary span');
+  expect(span.className).toContain('text-red-600');
 });

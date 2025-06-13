@@ -442,17 +442,9 @@ function generateMenu() {
     totalProfit += estProfit;
   });
 
-  const monthlyCard = `
-    <div id="monthly-summary" class="bg-blue-50 p-4 rounded-lg mb-6 text-sm text-blue-800">
-      <p><strong>Cocktails / mois :</strong> ${monthlyTotal}</p>
-      <p><strong>Ventes / mois :</strong> ${totalRevenue.toLocaleString()} FCFA</p>
-      <p><strong>Revenus / mois :</strong> ${totalProfit.toLocaleString()} FCFA</p>
-    </div>`;
-  document.getElementById('monthly-summary')?.remove();
-  container.insertAdjacentHTML('beforebegin', monthlyCard);
-
   const overallMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
   const marginColor = overallMargin > 89 ? 'text-orange-500' : overallMargin >= 78 ? 'text-green-600' : 'text-red-600';
+  const profitColor = overallMargin > 90 ? 'text-orange-500' : overallMargin < 75 ? 'text-red-600' : 'text-green-600';
 
 
   // Generate HTML for the menu summary
@@ -504,6 +496,17 @@ function generateMenu() {
         </tbody>
       </table>
     </div>`;
+
+  const monthlyCard = `
+    <div id="monthly-summary" class="bg-blue-50 p-4 rounded-lg my-6 text-sm text-blue-900">
+      <div class="grid sm:grid-cols-3 gap-3 text-center sm:text-left">
+        <p><strong>Cocktails / mois :</strong><br>${monthlyTotal}</p>
+        <p><strong>Ventes / mois :</strong><br><span class="${profitColor}">${totalRevenue.toLocaleString()} FCFA</span></p>
+        <p><strong>Revenus / mois :</strong><br><span class="${profitColor}">${totalProfit.toLocaleString()} FCFA</span></p>
+      </div>
+    </div>`;
+  const goalBox = container.querySelector('.bg-blue-50');
+  goalBox.insertAdjacentHTML('afterend', monthlyCard);
 }
 
 async function exportMenu() {
