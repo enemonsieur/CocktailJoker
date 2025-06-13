@@ -87,9 +87,8 @@ function renderSelected() {
 
   container.innerHTML = selected.map((c, i) => {
     const totalCost = calcTotalCost(c);
-    const margin = c.price - totalCost;
-    const marginPercentage = totalCost > 0 ? (margin / c.price) * 100 : (c.price > 0 ? 100 : 0);
-    const marginColor = marginPercentage > 90 ? 'text-orange-500' : marginPercentage >= 75 ? 'text-green-600' : 'text-red-600';
+    const marginPercent = Math.round(((c.price - totalCost) / c.price) * 100);
+    const marginColor = marginPercent > 90 ? 'text-orange-500' : marginPercent >= 75 ? 'text-green-600' : 'text-red-600';
 
     return `
       <div class="bg-white rounded-lg p-4 mb-4 border">
@@ -189,7 +188,7 @@ function renderSelected() {
           <div class="flex justify-between">
             <span class="text-sm">Coût: <span class="cost-amount">${Math.round(totalCost)}</span> FCFA</span>
             <span class="text-sm">Prix: ${Math.round(c.price)} FCFA</span>
-            <span class="text-sm font-medium ${marginColor}">Marge: <span class="margin-percentage">${Math.round(marginPercentage)}</span>%</span>
+            <span class="text-sm font-medium ${marginColor}">Marge: <span class="margin-percentage">${marginPercent}</span>%</span>
           </div>
         </div>
 
@@ -241,27 +240,22 @@ function updateIngredientUnitServed(cocktailIndex, ingredientIndex, newUnit) {
 
 // Calculate total cost of a cocktail
 function calcTotalCost(cocktail) {
-  // this function inputs a cocktail object 
-  // and returns the total cost of the ingredients
-  return cocktail.ingredients.reduce((sum, ing) => {
+  const total = cocktail.ingredients.reduce((sum, ing) => {
     const ref = masterIngredients[ing.name];
     if (!ref) return sum;
 
-    // 1) figure out how many "served units" in one "buyUnit"
-    let conversionFactor = 1;
-    if (ref.buyUnit === "liter" && ref.unitServed === "cl") {
-      conversionFactor = 100;      // 1 liter = 100 cl
-    } else if (ref.buyUnit === "kg" && ref.unitServed === "g") {
-      conversionFactor = 1000;     // 1 kg = 1000 g
+    let factor = 1;
+    if (ref.buyUnit === 'liter' && ref.unitServed === 'cl') {
+      factor = 100;
+    } else if (ref.buyUnit === 'kg' && ref.unitServed === 'g') {
+      factor = 1000;
     }
-    // (no conversion needed if both are "piece" or if buyUnit/unitServed already match)
 
-    // 2) compute cost per single "served unit"
-    const costPerServedUnit = ref.price / (ref.buyVolume * conversionFactor);
-
-    // 3) multiply by how many units this cocktail actually uses
-    return sum + (costPerServedUnit * ing.volume);
+    const costPerServed = ref.price / (ref.buyVolume * factor);
+    return sum + costPerServed * ing.volume;
   }, 0);
+
+  return Math.round(total);
 }
 
 
@@ -280,14 +274,13 @@ function updateMasterIngredient(ingredientName, property, value) {
     // Forcer le recalcul des coûts
     selected.forEach((_, index) => {
       const cost = calcTotalCost(selected[index]);
-      const margin = selected[index].price - cost;
-      const marginPercentage = cost > 0 ? (margin / selected[index].price) * 100 : (selected[index].price > 0 ? 100 : 0);
+      const marginPercent = Math.round(((selected[index].price - cost) / selected[index].price) * 100);
     
       const costElement = document.querySelector(`#selected-cocktails > div:nth-child(${index + 1}) .cost-amount`);
       const marginElement = document.querySelector(`#selected-cocktails > div:nth-child(${index + 1}) .margin-percentage`);
     
       if (costElement) costElement.textContent = Math.round(cost);
-      if (marginElement) marginElement.textContent = Math.round(marginPercentage);
+      if (marginElement) marginElement.textContent = marginPercent;
     });
     
   }
@@ -409,43 +402,48 @@ function generateMenu() {
     return;
   }
 
-  // Calculate total cost, revenue, and profit
-  const summary = selected.reduce((acc, cocktail) => {
+  const wknd = parseFloat(document.getElementById('weekend-input')?.value) || 0;
+  const wkdy = parseFloat(document.getElementById('weekday-input')?.value) || 0;
+  const weeklyTotal = wknd * 2 + wkdy * 5;
+  const monthlyTotal = weeklyTotal * 4;
+
+  const summary = { totalCost: 0, totalRevenue: 0, totalProfit: 0, cocktails: [] };
+  selected.forEach(cocktail => {
     const cost = calcTotalCost(cocktail);
-    const revenue = cocktail.price;
-    const profit = revenue - cost;
-    const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
-    
-    acc.totalCost += cost;
-    acc.totalRevenue += revenue;
-    acc.totalProfit += profit;
-    acc.cocktails.push({
+    const price = cocktail.price;
+    const profit = price - cost;
+    const margin = Math.round(((price - cost) / price) * 100);
+
+    summary.totalCost += cost;
+    summary.totalRevenue += price;
+    summary.totalProfit += profit;
+
+    summary.cocktails.push({
       name: cocktail.name,
-      cost: cost,
-      price: revenue,
-      profit: profit,
-      margin: margin,
+      cost,
+      price,
+      margin,
       popularity: cocktail.popularity
     });
-    
-    return acc;
-  }, { totalCost: 0, totalRevenue: 0, totalProfit: 0, cocktails: [] });
+  });
 
-  // Calculate overall margin (using same formula as individual cocktails)
-  const overallMargin = summary.totalRevenue > 0
-    ? (summary.totalProfit / summary.totalRevenue) * 100
-    : 0;
+  const popSum = summary.cocktails.reduce((s, c) => s + c.popularity, 0) || 1;
+  let totalRevenue = 0;
+  let totalProfit = 0;
+  summary.cocktails.forEach(c => {
+    c.estMonthly = Math.round(monthlyTotal * (c.popularity / popSum));
+    c.estRevenue = c.estMonthly * c.price;
+    c.estProfit = c.estMonthly * (c.price - c.cost);
+    totalRevenue += c.estRevenue;
+    totalProfit += c.estProfit;
+  });
 
-  const marginColor = overallMargin > 89 ? 'text-orange-500' :
-                     overallMargin >= 78 ? 'text-green-600' : 'text-red-600';
+  const overallMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+  const marginColor = overallMargin > 89 ? 'text-orange-500' : overallMargin >= 78 ? 'text-green-600' : 'text-red-600';
 
-  const goodDaysAvg = parseFloat(document.getElementById('avg-good-days')?.value) || 0;
-  const normalDaysAvg = parseFloat(document.getElementById('avg-normal-days')?.value) || 0;
-  const monthlyQty = (normalDaysAvg * 5 + goodDaysAvg * 2) * 4;
-  const totalPop = summary.cocktails.reduce((s, c) => s + c.popularity, 0) || 1;
-  const weightedPrice = summary.cocktails.reduce((s, c) => s + c.price * (c.popularity / totalPop), 0);
-  const monthlySales = weightedPrice * monthlyQty;
-  const monthlyProfit = monthlySales * (overallMargin / 100);
+  document.getElementById('weekly-total').textContent = weeklyTotal;
+  document.getElementById('monthly-total').textContent = monthlyTotal;
+  document.getElementById('average-margin').textContent = Math.round((totalProfit / totalRevenue) * 100);
 
   // Generate HTML for the menu summary
   container.innerHTML = `
@@ -461,7 +459,6 @@ function generateMenu() {
       <p>Objectif: marges entre 75% et 90%</p>
       <p class="text-xs opacity-80">En dessous de 75%: prix trop bas ou coûts trop élevés</p>
       <p class="text-xs opacity-80">Au-dessus de 90%: prix potentiellement trop élevés</p>
-      <p class="mt-2">Estimation des ventes mensuelles: ${Math.round(monthlySales)} FCFA (marge: ${Math.round(monthlyProfit)} FCFA)</p>
     </div>
     
     <div class="overflow-x-auto">
@@ -473,18 +470,21 @@ function generateMenu() {
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prix</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marge</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Popularité</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ventes m.</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenu m.</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profit m.</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
           ${summary.cocktails.map(cocktail => {
-            const marginColor = cocktail.margin > 90 ? 'text-orange-500' : 
+            const marginColor = cocktail.margin > 90 ? 'text-orange-500' :
                               cocktail.margin >= 75 ? 'text-green-600' : 'text-red-600';
             return `
             <tr class="hover:bg-gray-50">
               <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 break-words">${cocktail.name}</td>
               <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${Math.round(cocktail.price)} FCFA</td>
               <td class="px-4 py-3 whitespace-nowrap text-sm font-medium ${marginColor}">
-                ${Math.round(cocktail.margin)}%
+                ${cocktail.margin}%
                 <div class="text-xs text-gray-500">
                   (Coût: ${Math.round(cocktail.cost)} FCFA)
                 </div>
@@ -492,6 +492,9 @@ function generateMenu() {
               <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                 ${'★'.repeat(cocktail.popularity)}${'☆'.repeat(5 - cocktail.popularity)}
               </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${cocktail.estMonthly}</td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${Math.round(cocktail.estRevenue)} FCFA</td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${Math.round(cocktail.estProfit)} FCFA</td>
             </tr>`;
           }).join('')}
         </tbody>
@@ -648,5 +651,10 @@ async function sendTestCocktail() {
     console.error("💥 Error sending:", error);
     alert("💥 Failed: " + error.message);
   }
+}
+
+// Export for testing in Node environment
+if (typeof module !== 'undefined') {
+  module.exports = { calcTotalCost, generateMenu };
 }
 

@@ -18,22 +18,30 @@
   <!-- Selected cocktails & cost analysis will mount here -->
   <div id="selected-cocktails" class="mb-8"></div>
 
+  <!-- Inputs for sales estimation -->
+  <div id="sales-inputs" class="mb-6 border-b border-gray-300 pb-4">
+    <p class="font-medium mb-2">Pour estimer vos marges, merci de renseigner :</p>
+    <label class="block mb-1">Cocktails vendus week-end :
+      <input id="weekend-input" type="number" class="w-full p-2 border rounded mb-2">
+    </label>
+    <label class="block">Cocktails vendus semaine :
+      <input id="weekday-input" type="number" class="w-full p-2 border rounded">
+    </label>
+  </div>
+
   <!-- Generate summary button -->
   <div class="text-center my-8">
     <button onclick="generateMenu()"
-      <!-- Full-width button on mobile -->
       class="w-full sm:w-auto bg-indigo-600 text-white font-bold px-6 py-3 rounded-lg shadow-md hover:bg-indigo-700">
       Générer le Résumé du Menu
     </button>
   </div>
 
-  <!-- Inputs for sales estimation -->
-  <div id="sales-inputs" class="container mx-auto max-w-4xl mb-4">
-    <p class="font-medium mb-2">Pour estimer vos marges, répondez à ces deux questions :</p>
-    <label class="block mb-1" for="avg-good-days">Moy. cocktails vendus les jours forts (Sam-Dim)</label>
-    <input id="avg-good-days" type="number" class="w-full p-2 border rounded mb-3">
-    <label class="block mb-1" for="avg-normal-days">Moy. cocktails vendus les jours normaux (Lun-Ven)</label>
-    <input id="avg-normal-days" type="number" class="w-full p-2 border rounded">
+  <!-- Sales summary card -->
+  <div id="sales-summary" class="bg-blue-50 p-4 rounded-lg mb-6 text-sm text-blue-800">
+    <p><strong>Ventes hebdo :</strong> <span id="weekly-total"></span></p>
+    <p><strong>Ventes mensuelles :</strong> <span id="monthly-total"></span></p>
+    <p><strong>Marge moyenne :</strong> <span id="average-margin"></span>%</p>
   </div>
 
   <!-- Summary table will mount here -->
