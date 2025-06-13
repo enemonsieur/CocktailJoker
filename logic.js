@@ -431,12 +431,20 @@ function generateMenu() {
   }, { totalCost: 0, totalRevenue: 0, totalProfit: 0, cocktails: [] });
 
   // Calculate overall margin (using same formula as individual cocktails)
-  const overallMargin = summary.totalRevenue > 0 
-    ? (summary.totalProfit / summary.totalRevenue) * 100 
+  const overallMargin = summary.totalRevenue > 0
+    ? (summary.totalProfit / summary.totalRevenue) * 100
     : 0;
-    
-  const marginColor = overallMargin > 89 ? 'text-orange-500' : 
+
+  const marginColor = overallMargin > 89 ? 'text-orange-500' :
                      overallMargin >= 78 ? 'text-green-600' : 'text-red-600';
+
+  const goodDaysAvg = parseFloat(document.getElementById('avg-good-days')?.value) || 0;
+  const normalDaysAvg = parseFloat(document.getElementById('avg-normal-days')?.value) || 0;
+  const monthlyQty = (normalDaysAvg * 5 + goodDaysAvg * 2) * 4;
+  const totalPop = summary.cocktails.reduce((s, c) => s + c.popularity, 0) || 1;
+  const weightedPrice = summary.cocktails.reduce((s, c) => s + c.price * (c.popularity / totalPop), 0);
+  const monthlySales = weightedPrice * monthlyQty;
+  const monthlyProfit = monthlySales * (overallMargin / 100);
 
   // Generate HTML for the menu summary
   container.innerHTML = `
@@ -452,6 +460,7 @@ function generateMenu() {
       <p>Objectif: marges entre 75% et 90%</p>
       <p class="text-xs opacity-80">En dessous de 75%: prix trop bas ou coûts trop élevés</p>
       <p class="text-xs opacity-80">Au-dessus de 90%: prix potentiellement trop élevés</p>
+      <p class="mt-2">Estimation des ventes mensuelles: ${Math.round(monthlySales)} FCFA (marge: ${Math.round(monthlyProfit)} FCFA)</p>
     </div>
     
     <div class="overflow-x-auto">
