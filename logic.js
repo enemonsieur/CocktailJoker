@@ -94,11 +94,12 @@ function renderSelected() {
     return `
       <div class="bg-white rounded-lg p-4 mb-4 border">
         <div class="flex justify-between items-center mb-3">
-          <h3 class="text-lg font-semibold">${c.name}</h3>
+          <h3 class="text-lg font-semibold break-words">${c.name}</h3>
           <button onclick="removeCocktail(${i})" class="text-red-500">×</button>
         </div>
 
-        <div class="mb-3">
+        <div class="mb-3 overflow-x-auto">
+          <!-- Enable horizontal scrolling on small screens -->
           <div class="grid grid-cols-11 gap-2 mb-1 text-xs text-gray-500">
             <div class="col-span-1"></div>
             <div class="col-span-4">Ingrédient</div>
@@ -162,25 +163,25 @@ function renderSelected() {
           <button onclick="addNewIngredient(${i})" class="mt-2 text-sm text-blue-500 hover:text-blue-700">+ Ajouter un ingrédient</button>
         </div>
 
-        <div class="grid grid-cols-2 gap-4 mt-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
           <div>
             <div class="text-xs text-gray-500 mb-1">Prix de vente (FCFA)</div>
             <div class="flex items-center">
-              <input type="number" 
-                     value="${c.price}" 
-                     onchange="updateCocktailPrice(${i}, parseInt(this.value))" 
-                     class="w-24 p-1 border-b">
+              <input type="number"
+                     value="${c.price}"
+                     onchange="updateCocktailPrice(${i}, parseInt(this.value))"
+                     class="w-full p-1 border-b">
             </div>
           </div>
 
           <div>
             <div class="text-xs text-gray-500 mb-1">Popularité (1-5)</div>
-            <input type="number" 
-                   min="1" 
-                   max="5" 
-                   value="${c.popularity}" 
-                   onchange="updateCocktailPopularity(${i}, parseInt(this.value))" 
-                   class="w-16 p-1 border-b">
+              <input type="number"
+                   min="1"
+                   max="5"
+                   value="${c.popularity}"
+                   onchange="updateCocktailPopularity(${i}, parseInt(this.value))"
+                   class="w-full p-1 border-b">
           </div>
         </div>
 
@@ -464,6 +465,7 @@ function generateMenu() {
     </div>
     
     <div class="overflow-x-auto">
+    <!-- Scroll horizontally on small screens -->
       <table class="min-w-full bg-white rounded-lg overflow-hidden">
         <thead class="bg-gray-50">
           <tr>
@@ -479,7 +481,7 @@ function generateMenu() {
                               cocktail.margin >= 75 ? 'text-green-600' : 'text-red-600';
             return `
             <tr class="hover:bg-gray-50">
-              <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${cocktail.name}</td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 break-words">${cocktail.name}</td>
               <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${Math.round(cocktail.price)} FCFA</td>
               <td class="px-4 py-3 whitespace-nowrap text-sm font-medium ${marginColor}">
                 ${Math.round(cocktail.margin)}%

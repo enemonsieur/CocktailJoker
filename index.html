@@ -4,22 +4,25 @@
 <head>
   <meta charset="UTF-8">
   <title>Optimisateur de Marges de Cocktails</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 text-gray-800 p-4 md:p-8">
+<body class="bg-gray-100 text-gray-800">
+
+  <div class="max-w-screen-sm mx-auto px-4 py-4 md:py-8">
 
   <!-- Cocktail list buttons will mount here -->
-  <div id="cocktail-list" class="container mx-auto max-w-4xl mb-8"></div>
+  <div id="cocktail-list" class="mb-8"></div>
 
   <!-- Selected cocktails & cost analysis will mount here -->
-  <div id="selected-cocktails" class="container mx-auto max-w-4xl mb-8"></div>
+  <div id="selected-cocktails" class="mb-8"></div>
 
   <!-- Generate summary button -->
   <div class="text-center my-8">
     <button onclick="generateMenu()"
-      class="bg-indigo-600 text-white font-bold px-6 py-3 rounded-lg shadow-md hover:bg-indigo-700">
+      <!-- Full-width button on mobile -->
+      class="w-full sm:w-auto bg-indigo-600 text-white font-bold px-6 py-3 rounded-lg shadow-md hover:bg-indigo-700">
       Générer le Résumé du Menu
     </button>
   </div>
@@ -34,11 +37,12 @@
   </div>
 
   <!-- Summary table will mount here -->
-  <div id="menu-summary" class="container mx-auto max-w-4xl"></div>
+  <div id="menu-summary"></div>
 
   <!-- Export (save & WhatsApp) button -->
   <div id="export-section" class="text-center mb-8 mt-4">
-    <button onclick="exportMenu()" class="bg-green-500 hover:bg-green-600 text-white font-bold px-6 py-3 rounded-lg transition-colors duration-200">
+    <!-- Full-width button on mobile -->
+    <button onclick="exportMenu()" class="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-bold px-6 py-3 rounded-lg transition-colors duration-200">
       Sauvegarder Votre Menu et Marges
     </button>
   </div>
@@ -46,6 +50,8 @@
   <!-- Data definitions, then app logic -->
   <script src="data.js"></script>
   <script src="logic.js"></script>
+
+  </div> <!-- /wrapper -->
 
 </body>
 
