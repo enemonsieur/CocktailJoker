@@ -1,4 +1,5 @@
-const { calcTotalCost, generateMenu } = require('../logic.js');
+/** @jest-environment jsdom */
+const { calcTotalCost, generateMenu, __setSelected } = require('../logic.js');
 
 describe('calcTotalCost', () => {
   beforeEach(() => {
@@ -33,37 +34,61 @@ describe('generateMenu', () => {
   beforeEach(() => {
     document.body.innerHTML = `
       <div id="menu-summary"></div>
-      <div id="weekly-total"></div>
-      <div id="monthly-total"></div>
-      <div id="average-margin"></div>
-      <input id="weekend-input" value="10" />
-      <input id="weekday-input" value="20" />
+      <input id="weekend-input" />
+      <input id="weekday-input" />
     `;
 
     global.masterIngredients = {
       Rum: { unitServed: 'cl', buyVolume: 1, buyUnit: 'liter', price: 1000 }
     };
 
-    global.selected = [
+    const sel = [
       { name: 'C1', price: 1000, popularity: 2, ingredients: [{ name: 'Rum', volume: 5 }] },
-      { name: 'C2', price: 800, popularity: 1, ingredients: [{ name: 'Rum', volume: 5 }] }
+      { name: 'C2', price: 800, popularity: 1, ingredients: [{ name: 'Rum', volume: 5 }] },
+      { name: 'C3', price: 1200, popularity: 3, ingredients: [{ name: 'Rum', volume: 5 }] }
     ];
+    __setSelected(sel);
   });
 
-  it('updates sales summary and table with computed values', () => {
+  it('displays correct sales totals', () => {
+    document.getElementById('weekend-input').value = '2';
+    document.getElementById('weekday-input').value = '4';
+
     generateMenu();
 
-    expect(document.getElementById('weekly-total').textContent).toBe('120');
-    expect(document.getElementById('monthly-total').textContent).toBe('480');
-    expect(document.getElementById('average-margin').textContent).toBe('95');
+    const summary = document.getElementById('sales-summary');
+    expect(summary.textContent).toContain('24');
+    expect(summary.textContent).toContain('96');
+  });
+
+  it('calculates weighted monthly sales and profit', () => {
+    document.getElementById('weekend-input').value = '2';
+    document.getElementById('weekday-input').value = '4';
+
+    generateMenu();
 
     const rows = document.querySelectorAll('#menu-summary tbody tr');
-    expect(rows).toHaveLength(2);
-    expect(rows[0].textContent).toContain('320');
-    expect(rows[0].textContent).toContain('320000');
-    expect(rows[0].textContent).toContain('304000');
-    expect(rows[1].textContent).toContain('160');
-    expect(rows[1].textContent).toContain('128000');
-    expect(rows[1].textContent).toContain('120000');
+    expect(rows).toHaveLength(3);
+    const texts = Array.from(rows).map(r => r.textContent);
+    expect(texts[0]).toContain('32');
+    expect(texts[0]).toContain('30400');
+    expect(texts[1]).toContain('16');
+    expect(texts[1]).toContain('12000');
+    expect(texts[2]).toContain('48');
+    expect(texts[2]).toContain('55200');
+  });
+});
+
+describe('index.html inputs', () => {
+  it('contains numeric weekend and weekday fields', () => {
+    const fs = require('fs');
+    const html = fs.readFileSync('index.html', 'utf8');
+    document.body.innerHTML = html;
+    const weekend = document.getElementById('weekend-input');
+    const weekday = document.getElementById('weekday-input');
+    expect(weekend).not.toBeNull();
+    expect(weekday).not.toBeNull();
+    expect(weekend.type).toBe('number');
+    expect(weekday.type).toBe('number');
   });
 });

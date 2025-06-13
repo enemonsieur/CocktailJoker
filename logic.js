@@ -402,10 +402,18 @@ function generateMenu() {
     return;
   }
 
-  const wknd = parseFloat(document.getElementById('weekend-input')?.value) || 0;
-  const wkdy = parseFloat(document.getElementById('weekday-input')?.value) || 0;
-  const weeklyTotal = wknd * 2 + wkdy * 5;
+  const weekend = +document.getElementById('weekend-input').value || 0;
+  const weekday = +document.getElementById('weekday-input').value || 0;
+  const weeklyTotal = weekend * 2 + weekday * 5;
   const monthlyTotal = weeklyTotal * 4;
+
+  const oldCard = document.getElementById('sales-summary');
+  if (oldCard) oldCard.remove();
+  document.getElementById('menu-summary').insertAdjacentHTML('beforebegin', `
+    <div id="sales-summary" class="bg-blue-50 p-4 rounded-lg mb-6 text-sm text-blue-800">
+      <p><strong>Hebdo :</strong> ${weeklyTotal} cocktails</p>
+      <p><strong>Mensuel :</strong> ${monthlyTotal} cocktails</p>
+    </div>`);
 
   const summary = { totalCost: 0, totalRevenue: 0, totalProfit: 0, cocktails: [] };
   selected.forEach(cocktail => {
@@ -431,19 +439,15 @@ function generateMenu() {
   let totalRevenue = 0;
   let totalProfit = 0;
   summary.cocktails.forEach(c => {
-    c.estMonthly = Math.round(monthlyTotal * (c.popularity / popSum));
-    c.estRevenue = c.estMonthly * c.price;
-    c.estProfit = c.estMonthly * (c.price - c.cost);
-    totalRevenue += c.estRevenue;
-    totalProfit += c.estProfit;
+    c.estimatedMonthly = Math.round(monthlyTotal * (c.popularity / popSum));
+    c.estimatedProfit = c.estimatedMonthly * (c.price - c.cost);
+    totalRevenue += c.estimatedMonthly * c.price;
+    totalProfit += c.estimatedProfit;
   });
 
   const overallMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
   const marginColor = overallMargin > 89 ? 'text-orange-500' : overallMargin >= 78 ? 'text-green-600' : 'text-red-600';
 
-  document.getElementById('weekly-total').textContent = weeklyTotal;
-  document.getElementById('monthly-total').textContent = monthlyTotal;
-  document.getElementById('average-margin').textContent = Math.round((totalProfit / totalRevenue) * 100);
 
   // Generate HTML for the menu summary
   container.innerHTML = `
@@ -471,7 +475,6 @@ function generateMenu() {
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marge</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Popularité</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ventes m.</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenu m.</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profit m.</th>
           </tr>
         </thead>
@@ -492,9 +495,8 @@ function generateMenu() {
               <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                 ${'★'.repeat(cocktail.popularity)}${'☆'.repeat(5 - cocktail.popularity)}
               </td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${cocktail.estMonthly}</td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${Math.round(cocktail.estRevenue)} FCFA</td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${Math.round(cocktail.estProfit)} FCFA</td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${cocktail.estimatedMonthly}</td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${Math.round(cocktail.estimatedProfit)} FCFA</td>
             </tr>`;
           }).join('')}
         </tbody>
@@ -655,6 +657,10 @@ async function sendTestCocktail() {
 
 // Export for testing in Node environment
 if (typeof module !== 'undefined') {
-  module.exports = { calcTotalCost, generateMenu };
+  module.exports = {
+    calcTotalCost,
+    generateMenu,
+    __setSelected: s => { selected = s; }
+  };
 }
 
