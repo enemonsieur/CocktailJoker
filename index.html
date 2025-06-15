@@ -13,21 +13,26 @@
   <div class="max-w-screen-lg mx-auto px-4 py-4 md:py-8">
 
   <!-- Cocktail list buttons will mount here -->
-  <div id="cocktail-list" class="mb-8"></div>
+  <div id="cocktail-list" class="mb-8" title="Cliquez pour ajouter un cocktail que vous servez dans votre bar"></div>
 
   <!-- Selected cocktails & cost analysis will mount here -->
   <div id="selected-cocktails" class="mb-8"></div>
 
   <!-- Inputs for sales estimation -->
   <div id="sales-inputs" class="mb-6 border-b border-gray-300 pb-4 grid grid-cols-2 gap-4">
-    <p class="text-sm font-semibold mb-2 col-span-2">Estimez vos ventes pour mieux calculer vos marges</p>
-    <div>
-      <p class="text-sm font-medium mb-1">Week-end</p>
-      <input id="weekend-input" type="number" title="Cocktails vendus le samedi et dimanche" class="w-full p-2 border rounded">
-    </div>
+    <p class="text-sm font-semibold col-span-2">Estimez vos ventes pour mieux calculer vos marges</p>
+    <p class="text-xs text-gray-600 mb-2 col-span-2">Pour mieux estimer vos marges, entrez le nombre de cocktails que votre bar vend en :</p>
     <div>
       <p class="text-sm font-medium mb-1">Semaine</p>
-      <input id="weekday-input" type="number" title="Cocktails vendus du lundi au vendredi" class="w-full p-2 border rounded">
+      <input id="weekday-input" type="number" required title="Pendant les jours de faible activité (ex: Lundi à Jeudi)" class="w-full p-2 border rounded">
+    </div>
+    <div>
+      <p class="text-sm font-medium mb-1">Week-End</p>
+      <input id="weekend-input" type="number" required title="Pendant les jours de forte activité (ex: Vendredi à Dimanche)" class="w-full p-2 border rounded">
+    </div>
+    <div class="col-span-2">
+      <p class="text-sm font-medium mb-1">Revenus mensuels bruts</p>
+      <input id="gross-revenue-input" type="number" title="Ce champ peut écraser l’estimation automatique si rempli." class="w-full p-2 border rounded">
     </div>
   </div>
 
