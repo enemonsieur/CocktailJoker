@@ -7,6 +7,7 @@ const {
   addCustomCocktail,
   updateCocktailName,
   renderCocktailList
+
 } = require('../logic.js');
 
 describe('calcTotalCost', () => {
@@ -104,6 +105,7 @@ test('New custom cocktail appears on click', () => {
   global.cocktails = [];
   addCustomCocktail();
   const name = document.querySelector('#selected-cocktails input[type="text"]').value;
+
   expect(name).toBe('Nouveau cocktail');
 });
 

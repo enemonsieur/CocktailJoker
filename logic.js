@@ -93,6 +93,7 @@ function renderCocktailList() {
   createBtn.className = 'bg-green-500 text-white font-bold py-2 px-4 rounded-md m-1 hover:bg-green-600';
   createBtn.textContent = '+ Créer un cocktail';
   createBtn.title = 'Cliquez ici pour créer un cocktail personnalisé';
+
   createBtn.onclick = () => addCustomCocktail();
   div.appendChild(createBtn);
 }
@@ -715,6 +716,7 @@ if (typeof module !== 'undefined') {
     renderSelected,
     addCustomCocktail,
     updateCocktailName
+
   };
 }
 
