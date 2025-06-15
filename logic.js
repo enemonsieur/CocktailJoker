@@ -92,7 +92,7 @@ function renderCocktailList() {
   const createBtn = document.createElement('button');
   createBtn.className = 'bg-green-500 text-white font-bold py-2 px-4 rounded-md m-1 hover:bg-green-600';
   createBtn.textContent = '+ Créer un cocktail';
-  createBtn.title = 'Cliquez ici pour créer un cocktail personnalisé';
+  createBtn.title = 'Cliquez pour créer un cocktail personnalisé avec vos propres ingrédients';
 
   createBtn.onclick = () => addCustomCocktail();
   div.appendChild(createBtn);
@@ -123,6 +123,7 @@ function renderSelected() {
     return `
       <div class="bg-white rounded-lg p-4 mb-4 border">
         <div class="flex justify-between items-center mb-3">
+
           <input type="text"
                  value="${c.name}"
                  onchange="updateCocktailName(${i}, this.value)"
@@ -144,17 +145,19 @@ function renderSelected() {
             const ingInfo = masterIngredients[ing.name] || { unitServed: 'cl', buyVolume: 1, buyUnit: 'liter', price: 0 };
             return `
               <div class="grid grid-cols-11 gap-2 items-center">
+
                 <button onclick="removeIngredient(${i}, ${idx})" class="text-red-500 col-span-1" title="Supprimer cet ingrédient">×</button>
 
                 <!-- Ingredient name input -->
                 <input type="text"
                       value="${ing.name}"
+                      title="Modifiez le nom de l’ingrédient"
                       onchange="updateIngredient(${i}, ${idx}, 'name', this.value)"
                       class="col-span-4 p-1 border-b"
                       title="Nom de l’ingrédient (ex: Gin)">
 
                 <!-- Volume number + unit select -->
-                <div class="col-span-2 flex items-center gap-1">
+                <div class="col-span-2 flex items-center gap-1" title="Volume utilisé par cocktail">
                   <input type="number"
                         value="${ing.volume}"
                         step="0.1"
@@ -170,7 +173,7 @@ function renderSelected() {
                 </div>
 
                 <!-- Prix d'achat: price / buyVolume and buyUnit select -->
-                <div class="col-span-4 flex items-center gap-1">
+                <div class="col-span-4 flex items-center gap-1" title="Coût d’achat de l’ingrédient et sa quantité à l’achat">
                   <input type="number"
                         value="${ingInfo.price}"
                         step="1"
@@ -217,6 +220,7 @@ function renderSelected() {
                    min="1"
                    max="5"
                    value="${c.popularity}"
+
                    title="À quel point ce cocktail est populaire (1 = Rarement commandé, 5 = Très souvent)"
                    onchange="updateCocktailPopularity(${i}, parseInt(this.value))"
                    class="w-full p-1 border-b">
@@ -225,9 +229,10 @@ function renderSelected() {
 
         <div class="mt-3 pt-2 border-t">
           <div class="flex justify-between">
-            <span class="text-sm" title="Combien coûte ce cocktail à produire">Coût: <span class="cost-amount">${Math.round(totalCost)}</span> FCFA</span>
-            <span class="text-sm">Prix: ${Math.round(c.price)} FCFA</span>
-            <span class="text-sm font-medium ${marginColor}" title="Combien vous gagnez si vous vendez à ce prix">Marge: <span class="margin-percentage">${marginPercent}</span>%</span>
+            <span class="text-sm" title="Combien ce cocktail vous coûte à produire">Coût: <span class="cost-amount">${Math.round(totalCost)}</span> FCFA</span>
+            <span class="text-sm" title="Prix auquel vous vendez ce cocktail">Prix: ${Math.round(c.price)} FCFA</span>
+            <span class="text-sm font-medium ${marginColor}" title="Combien vous gagnez avec ce prix (marge = profit/prix de vente)">Marge: <span class="margin-percentage">${marginPercent}</span>%</span>
+
           </div>
         </div>
 
@@ -453,8 +458,17 @@ function generateMenu() {
 
   const weekend = +document.getElementById('weekend-input').value || 0;
   const weekday = +document.getElementById('weekday-input').value || 0;
+
+  if (!weekend && !weekday) {
+    displayMessage('Veuillez renseigner vos ventes semaine et/ou week-end', 'error');
+    return;
+  }
+
   const weeklyTotal = weekend * 2 + weekday * 5;
   const monthlyTotal = weeklyTotal * 4;
+
+  const revenueField = document.getElementById('gross-revenue-input');
+  const manualRevenue = revenueField ? +revenueField.value || 0 : 0;
 
   document.getElementById('monthly-summary')?.remove();
 
@@ -488,6 +502,12 @@ function generateMenu() {
     totalProfit += estProfit;
   });
 
+  const marginRatio = totalRevenue > 0 ? totalProfit / totalRevenue : 0;
+  if (manualRevenue > 0) {
+    totalRevenue = manualRevenue;
+    totalProfit = manualRevenue * marginRatio;
+  }
+
   const overallMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
   const marginColor = overallMargin > 89 ? 'text-orange-500' : overallMargin >= 78 ? 'text-green-600' : 'text-red-600';
   const profitColor = overallMargin > 90 ? 'text-orange-500' : overallMargin < 75 ? 'text-red-600' : 'text-green-600';
@@ -499,14 +519,8 @@ function generateMenu() {
       <h3 class="text-xl font-bold text-gray-800">Résumé du Menu</h3>
       <div class="text-sm">
         <span class="text-gray-600">Marge globale: </span>
-        <span class="font-medium ${marginColor}">${Math.round(overallMargin)}%</span>
+        <span class="font-medium ${marginColor}" title="Objectif: entre 75% et 90%. En dessous: prix trop bas ou coût trop élevé. Au-dessus: marge excessive potentielle">${Math.round(overallMargin)}%</span>
       </div>
-    </div>
-    
-    <div class="bg-blue-50 p-3 rounded-lg mb-4 text-sm text-blue-800">
-      <p>Objectif: marges entre 75% et 90%</p>
-      <p class="text-xs opacity-80">En dessous de 75%: prix trop bas ou coûts trop élevés</p>
-      <p class="text-xs opacity-80">Au-dessus de 90%: prix potentiellement trop élevés</p>
     </div>
     
     <div class="overflow-x-auto">
@@ -516,7 +530,7 @@ function generateMenu() {
           <tr>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cocktail</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prix</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marge</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Ce que vous gagnez par cocktail après retrait des coûts">Marge</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Popularité</th>
           </tr>
         </thead>
@@ -528,7 +542,7 @@ function generateMenu() {
             <tr class="hover:bg-gray-50">
               <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 break-words">${cocktail.name}</td>
               <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">${Math.round(cocktail.price)} FCFA</td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm font-medium ${marginColor}">
+              <td class="px-4 py-3 whitespace-nowrap text-sm font-medium ${marginColor}" title="Ce que vous gagnez par cocktail après retrait des coûts">
                 ${cocktail.margin}%
                 <div class="text-xs text-gray-500">
                   (Coût: ${Math.round(cocktail.cost)} FCFA)
@@ -547,12 +561,11 @@ function generateMenu() {
     <div id="monthly-summary" class="bg-blue-50 p-4 rounded-lg my-6 text-sm text-blue-900">
       <div class="grid sm:grid-cols-3 gap-3 text-center sm:text-left">
         <p><strong>Cocktails / mois :</strong><br>${monthlyTotal}</p>
-        <p><strong>Ventes / mois :</strong><br><span class="${profitColor}">${totalRevenue.toLocaleString()} FCFA</span></p>
-        <p><strong>Revenus / mois :</strong><br><span class="${profitColor}">${totalProfit.toLocaleString()} FCFA</span></p>
+        <p title="Basé sur le prix de vente de vos cocktails multiplié par les volumes saisis"><strong>Ventes / mois :</strong><br><span class="${profitColor}">${totalRevenue.toLocaleString()} FCFA</span></p>
+        <p title="Chiffre d'affaires réel estimé après retrait des coûts de production"><strong>Revenus / mois :</strong><br><span class="${profitColor}">${totalProfit.toLocaleString()} FCFA</span></p>
       </div>
     </div>`;
-  const goalBox = container.querySelector('.bg-blue-50');
-  goalBox.insertAdjacentHTML('afterend', monthlyCard);
+  container.insertAdjacentHTML('beforeend', monthlyCard);
 }
 
 async function exportMenu() {
