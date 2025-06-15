@@ -139,7 +139,7 @@ function renderSelected() {
             const ingInfo = masterIngredients[ing.name] || { unitServed: 'cl', buyVolume: 1, buyUnit: 'liter', price: 0 };
             return `
               <div class="grid grid-cols-11 gap-2 items-center">
-                <button onclick="removeIngredient(${i}, ${idx})" class="text-red-500 col-span-1" title="Retirer cet ingrédient du cocktail">×</button>
+                <button onclick="removeIngredient(${i}, ${idx})" class="text-red-500 col-span-1" title="Supprimer cet ingrédient">×</button>
 
 
 
@@ -444,13 +444,6 @@ function updateCocktailPrice(index, price) {
   }
 }
 
-// Update cocktail name
-function updateCocktailName(index, name) {
-  if (selected[index]) {
-    selected[index].name = name;
-    renderSelected();
-  }
-}
 
 function updateCocktailPopularity(index, popularity) {
   if (selected[index]) {
@@ -704,26 +697,25 @@ function generateCode() {
 // Make exportMenu available globally
 window.exportMenu = exportMenu;
 
+// Reveal app sections when user starts
+function startApp() {
+  ['cocktail-list', 'sales-estimation', 'scroll-cta']
+    .forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+  document.getElementById('intro-section')?.classList.add('hidden');
+  document.getElementById('cocktail-list')?.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Expose for inline handlers and tests
+window.startApp = startApp;
+
 // Initialize the app when the page loads
 document.addEventListener('DOMContentLoaded', () => {
   // 👉 keep initial render calls but container is hidden → no visual flash
   renderCocktailList();
   renderSelected();
 
-  const reveal = () => {
-    ['cocktail-list',
-     'sales-estimation',
-     'scroll-cta'
-    ].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
-
-    // scroll to first interactive bloc
-    document.getElementById('cocktail-list')
-            ?.scrollIntoView({ behavior:'smooth' });
-  };
-
-  document.getElementById('start-btn')?.addEventListener('click', reveal);
-  document.getElementById('scroll-cta')?.addEventListener('click', reveal);
-
+  document.getElementById('start-btn')?.addEventListener('click', startApp);
+  document.getElementById('scroll-cta')?.addEventListener('click', startApp);
 });
 
 // Helper function to display messages
