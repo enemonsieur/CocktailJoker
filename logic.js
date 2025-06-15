@@ -470,11 +470,21 @@ function generateMenu() {
   const revenueField = document.getElementById('gross-revenue-input');
   const manualRevenue = revenueField ? +revenueField.value || 0 : 0;
 
-  document.getElementById('monthly-summary')?.remove();
+        <span class="text-gray-600" title="Votre marge globale sur tous les cocktails sélectionnés">Marge globale: </span>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Les cocktails les plus populaires font le gros de vos revenus. Prix compétitifs recommandés (< 80%)">Popularité</th>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" title="Les cocktails les plus populaires font le gros de vos revenus. Prix compétitifs recommandés (< 80%)">
+        <p title="Revenu total généré par vos cocktails à leur prix de vente actuel"><strong>Ventes / mois :</strong><br><span class="${profitColor}">${totalRevenue.toLocaleString()} FCFA</span></p>
+        <p title="Ce que votre bar garde réellement après avoir payé les ingrédients"><strong>Revenus / mois :</strong><br><span class="${profitColor}">${totalProfit.toLocaleString()} FCFA</span></p>
 
-  const summary = { totalCost: 0, totalRevenue: 0, totalProfit: 0, cocktails: [] };
-  selected.forEach(cocktail => {
-    const cost = calcTotalCost(cocktail);
+  let helpMessage = '';
+  if (overallMargin > 89) {
+    helpMessage = 'Vos marges semblent trop hautes même pour un bar haut de gamme...<br>Vous pourriez augmenter vos revenus de 30% en les optimisant.<br>Besoin d\'aide ? Contactez-nous sur WhatsApp (Cliquez sur Sauvegarder)';
+  } else if (overallMargin < 75) {
+    helpMessage = 'Vos marges semblent trop basses pour un bar haut de gamme...<br>Vous gagnerez à optimiser vos prix.<br>Besoin d\'aide ? Contactez-nous sur WhatsApp (Cliquez sur Sauvegarder)';
+  }
+  if (helpMessage) {
+    container.insertAdjacentHTML('beforeend', `<p class="text-sm text-gray-700 italic mt-2">${helpMessage}</p>`);
+  }
     const price = cocktail.price;
     const profit = price - cost;
     const margin = Math.round(((price - cost) / price) * 100);

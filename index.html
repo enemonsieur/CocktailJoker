@@ -22,17 +22,17 @@
   <div id="sales-inputs" class="mb-6 border-b border-gray-300 pb-4 grid grid-cols-2 gap-4">
     <p class="text-sm font-semibold col-span-2">Estimez vos ventes pour mieux calculer vos marges</p>
     <p class="text-xs text-gray-600 mb-2 col-span-2">Pour mieux estimer vos marges, entrez le nombre de cocktails que votre bar vend en :</p>
+    <div class="col-span-2">
+      <p class="text-sm font-medium mb-1">Revenus mensuels bruts</p>
+      <input id="gross-revenue-input" type="number" title="Si vous connaissez vos revenus mensuels totaux, entrez-les ici pour un meilleur calcul de marge" class="w-full p-2 border rounded">
+    </div>
     <div>
       <p class="text-sm font-medium mb-1">Semaine</p>
-      <input id="weekday-input" type="number" required title="Pendant les jours de faible activité (ex: Lundi à Jeudi)" class="w-full p-2 border rounded">
+      <input id="weekday-input" type="number" required title="Période de faible activité (ex: lundi à jeudi)" class="w-full p-2 border rounded">
     </div>
     <div>
       <p class="text-sm font-medium mb-1">Week-End</p>
-      <input id="weekend-input" type="number" required title="Pendant les jours de forte activité (ex: Vendredi à Dimanche)" class="w-full p-2 border rounded">
-    </div>
-    <div class="col-span-2">
-      <p class="text-sm font-medium mb-1">Revenus mensuels bruts</p>
-      <input id="gross-revenue-input" type="number" title="Ce champ peut écraser l’estimation automatique si rempli." class="w-full p-2 border rounded">
+      <input id="weekend-input" type="number" required title="Période de forte activité (ex: vendredi à dimanche)" class="w-full p-2 border rounded">
     </div>
   </div>
 
