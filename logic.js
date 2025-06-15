@@ -107,15 +107,9 @@ function renderSelected() {
   }
 
   if (selected.length === 0) {
-    container.innerHTML = "<p class='text-gray-600 italic text-center py-4'>No cocktails selected yet. Click a cocktail from the list above to add it.</p>";
-    const menuSummaryContainer = document.getElementById("menu-summary");
-    if (menuSummaryContainer) {
-      menuSummaryContainer.innerHTML = "<p class='text-center text-gray-500 italic py-4'>Aucun cocktail sélectionné pour générer un résumé du menu.</p>";
-    }
-    return;
-  }
-
-  container.innerHTML = selected.map((c, i) => {
+    container.innerHTML = '';
+  } else {
+    container.innerHTML = selected.map((c, i) => {
     const totalCost = calcTotalCost(c);
     const marginPercent = Math.round(((c.price - totalCost) / c.price) * 100);
     const marginColor = marginPercent > 90 ? 'text-orange-500' : marginPercent >= 75 ? 'text-green-600' : 'text-red-600';
@@ -123,12 +117,9 @@ function renderSelected() {
     return `
       <div class="bg-white rounded-lg p-4 mb-4 border">
         <div class="flex justify-between items-center mb-3">
+          <h3 class="text-lg font-semibold break-words" title="Cliquez pour modifier le nom du cocktail personnalisé">${c.name}</h3>
+          <button onclick="removeCocktail(${i})" class="text-red-500" title="Supprimer ce cocktail de votre sélection">×</button>
 
-          <input type="text"
-                 value="${c.name}"
-                 onchange="updateCocktailName(${i}, this.value)"
-                 class="text-lg font-semibold break-words flex-grow mr-2 border-b">
-          <button onclick="removeCocktail(${i})" class="text-red-500" title="Supprimer ce cocktail">×</button>
         </div>
 
         <div class="mb-3 overflow-x-auto">
@@ -145,8 +136,8 @@ function renderSelected() {
             const ingInfo = masterIngredients[ing.name] || { unitServed: 'cl', buyVolume: 1, buyUnit: 'liter', price: 0 };
             return `
               <div class="grid grid-cols-11 gap-2 items-center">
+                <button onclick="removeIngredient(${i}, ${idx})" class="text-red-500 col-span-1" title="Retirer cet ingrédient du cocktail">×</button>
 
-                <button onclick="removeIngredient(${i}, ${idx})" class="text-red-500 col-span-1" title="Supprimer cet ingrédient">×</button>
 
                 <!-- Ingredient name input -->
                 <input type="text"
@@ -221,6 +212,7 @@ function renderSelected() {
                    max="5"
                    value="${c.popularity}"
 
+
                    title="À quel point ce cocktail est populaire (1 = Rarement commandé, 5 = Très souvent)"
                    onchange="updateCocktailPopularity(${i}, parseInt(this.value))"
                    class="w-full p-1 border-b">
@@ -240,10 +232,21 @@ function renderSelected() {
 
       </div>`;
   }).join('');
+  }
 
   if (document.getElementById("menu-summary").innerHTML.includes("<table>")) {
     generateMenu();
   }
+
+  // Toggle visibility of blocks depending on selection
+  const show = selected.length > 0;
+  document.getElementById('selected-cocktails').style.display = show ? 'block' : 'none';
+  const est = document.getElementById('sales-estimation');
+  if (est) est.style.display = show ? 'block' : 'none';
+  const exp = document.getElementById('export-section');
+  if (exp) exp.style.display = show ? 'block' : 'none';
+  const summary = document.getElementById('menu-summary');
+  if (summary) summary.style.display = 'none';
 }
 
 function updateIngredientUnitServed(cocktailIndex, ingredientIndex, newUnit) {
@@ -518,7 +521,8 @@ function generateMenu() {
     <div class="flex justify-between items-center mb-4">
       <h3 class="text-xl font-bold text-gray-800">Résumé du Menu</h3>
       <div class="text-sm">
-        <span class="text-gray-600">Marge globale: </span>
+        <span class="text-gray-600" title="Votre marge globale sur tous les cocktails sélectionnés">Marge globale: </span>
+
         <span class="font-medium ${marginColor}" title="Objectif: entre 75% et 90%. En dessous: prix trop bas ou coût trop élevé. Au-dessus: marge excessive potentielle">${Math.round(overallMargin)}%</span>
       </div>
     </div>
@@ -531,7 +535,8 @@ function generateMenu() {
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cocktail</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prix</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Ce que vous gagnez par cocktail après retrait des coûts">Marge</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Popularité</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Les cocktails les plus populaires font le gros de vos revenus. Prix compétitifs recommandés (< 80%)">Popularité</th>
+
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
@@ -548,7 +553,7 @@ function generateMenu() {
                   (Coût: ${Math.round(cocktail.cost)} FCFA)
                 </div>
               </td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" title="Les cocktails les plus populaires font le gros de vos revenus. Prix compétitifs recommandés (< 80%)">
                 ${'★'.repeat(cocktail.popularity)}${'☆'.repeat(5 - cocktail.popularity)}
               </td>
             </tr>`;
@@ -561,11 +566,27 @@ function generateMenu() {
     <div id="monthly-summary" class="bg-blue-50 p-4 rounded-lg my-6 text-sm text-blue-900">
       <div class="grid sm:grid-cols-3 gap-3 text-center sm:text-left">
         <p><strong>Cocktails / mois :</strong><br>${monthlyTotal}</p>
-        <p title="Basé sur le prix de vente de vos cocktails multiplié par les volumes saisis"><strong>Ventes / mois :</strong><br><span class="${profitColor}">${totalRevenue.toLocaleString()} FCFA</span></p>
-        <p title="Chiffre d'affaires réel estimé après retrait des coûts de production"><strong>Revenus / mois :</strong><br><span class="${profitColor}">${totalProfit.toLocaleString()} FCFA</span></p>
+        <p title="Revenu total généré par vos cocktails à leur prix de vente actuel"><strong>Ventes / mois :</strong><br><span class="${profitColor}">${totalRevenue.toLocaleString()} FCFA</span></p>
+        <p title="Ce que votre bar garde réellement après avoir payé les ingrédients"><strong>Revenus / mois :</strong><br><span class="${profitColor}">${totalProfit.toLocaleString()} FCFA</span></p>
       </div>
     </div>`;
   container.insertAdjacentHTML('beforeend', monthlyCard);
+
+  let helpMessage = '';
+  if (overallMargin > 89) {
+    helpMessage = 'Vos marges semblent trop hautes même pour un bar haut de gamme...<br>Vous pourriez augmenter vos revenus de 30% en les optimisant.<br>Besoin d\'aide ? Contactez-nous sur WhatsApp (Cliquez sur Sauvegarder)';
+  } else if (overallMargin < 75) {
+    helpMessage = 'Vos marges semblent trop basses pour un bar haut de gamme...<br>Vous gagnerez à optimiser vos prix.<br>Besoin d\'aide ? Contactez-nous sur WhatsApp (Cliquez sur Sauvegarder)';
+  }
+  if (helpMessage) {
+    container.insertAdjacentHTML('beforeend', `<p class="text-sm text-gray-700 italic mt-2">${helpMessage}</p>`);
+  }
+
+  const summaryEl = document.getElementById('menu-summary');
+  if (summaryEl) summaryEl.style.display = 'block';
+  const exportEl = document.getElementById('export-section');
+  if (exportEl) exportEl.style.display = 'block';
+
 }
 
 async function exportMenu() {
@@ -660,6 +681,12 @@ window.exportMenu = exportMenu;
 document.addEventListener('DOMContentLoaded', () => {
   renderCocktailList();
   renderSelected();
+  const startBtn = document.getElementById('start-btn');
+  if (startBtn) {
+    startBtn.addEventListener('click', () => {
+      document.getElementById('cocktail-list')?.scrollIntoView({ behavior: 'smooth' });
+    });
+  }
 });
 
 // Helper function to display messages
