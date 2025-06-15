@@ -17,6 +17,24 @@ function addCocktail(name) {
   }
 }
 
+// Add a blank custom cocktail for the user to fill in
+function addCustomCocktail() {
+  const newCocktail = {
+    name: "Nouveau cocktail",
+    price: 0,
+    popularity: 3,
+    ingredients: [
+      { name: "", volume: 0 },
+      { name: "", volume: 0 },
+      { name: "", volume: 0 }
+    ]
+  };
+
+  selected.push(newCocktail);
+  renderSelected();
+  renderCocktailList();
+}
+
 // Renders the initial list of cocktail buttons
 function renderCocktailList() {
   const div = document.getElementById("cocktail-list");
@@ -42,6 +60,7 @@ function renderCocktailList() {
                       ${active 
                         ? 'bg-blue-500 text-white' 
                         : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`;
+    button.title = 'Sélectionnez un cocktail que vous avez dans votre bar';
     button.textContent = `${active ? '✓' : '+'} ${c.name}`;
     button.onclick = () => {
       if (isSelected(c.name)) {
@@ -68,6 +87,14 @@ function renderCocktailList() {
   if (cocktails.some(c => c.popularity < 4)) {
     div.appendChild(toggleButton);
   }
+
+  // Button to let the user create a brand new cocktail
+  const createBtn = document.createElement('button');
+  createBtn.className = 'bg-green-500 text-white font-bold py-2 px-4 rounded-md m-1 hover:bg-green-600';
+  createBtn.textContent = '+ Créer un cocktail';
+  createBtn.title = 'Cliquez ici pour créer un cocktail personnalisé';
+  createBtn.onclick = () => addCustomCocktail();
+  div.appendChild(createBtn);
 }
 
 // Renders the cards for each selected cocktail
@@ -95,8 +122,11 @@ function renderSelected() {
     return `
       <div class="bg-white rounded-lg p-4 mb-4 border">
         <div class="flex justify-between items-center mb-3">
-          <h3 class="text-lg font-semibold break-words">${c.name}</h3>
-          <button onclick="removeCocktail(${i})" class="text-red-500">×</button>
+          <input type="text"
+                 value="${c.name}"
+                 onchange="updateCocktailName(${i}, this.value)"
+                 class="text-lg font-semibold break-words flex-grow mr-2 border-b">
+          <button onclick="removeCocktail(${i})" class="text-red-500" title="Supprimer ce cocktail">×</button>
         </div>
 
         <div class="mb-3 overflow-x-auto">
@@ -113,13 +143,14 @@ function renderSelected() {
             const ingInfo = masterIngredients[ing.name] || { unitServed: 'cl', buyVolume: 1, buyUnit: 'liter', price: 0 };
             return `
               <div class="grid grid-cols-11 gap-2 items-center">
-                <button onclick="removeIngredient(${i}, ${idx})" class="text-red-500 col-span-1">×</button>
+                <button onclick="removeIngredient(${i}, ${idx})" class="text-red-500 col-span-1" title="Supprimer cet ingrédient">×</button>
 
                 <!-- Ingredient name input -->
                 <input type="text"
                       value="${ing.name}"
                       onchange="updateIngredient(${i}, ${idx}, 'name', this.value)"
-                      class="col-span-4 p-1 border-b">
+                      class="col-span-4 p-1 border-b"
+                      title="Nom de l’ingrédient (ex: Gin)">
 
                 <!-- Volume number + unit select -->
                 <div class="col-span-2 flex items-center gap-1">
@@ -127,7 +158,8 @@ function renderSelected() {
                         value="${ing.volume}"
                         step="0.1"
                         onchange="updateIngredient(${i}, ${idx}, 'volume', parseFloat(this.value))"
-                        class="w-12 p-1 border-b">
+                        class="w-12 p-1 border-b"
+                        title="Quantité utilisée dans un verre (ex: 4cl)">
                   <select onchange="updateIngredientUnitServed(${i}, ${idx}, this.value)"
                           class="w-16 p-1 border-b">
                     <option value="cl"    ${ingInfo.unitServed === 'cl'    ? 'selected' : ''}>cl</option>
@@ -142,15 +174,18 @@ function renderSelected() {
                         value="${ingInfo.price}"
                         step="1"
                         onchange="updateIngredientMasterData('${ing.name}', 'price', this.value)"
-                        class="w-16 p-1 border-b">
+                        class="w-16 p-1 border-b"
+                        title="Prix d'achat pour une bouteille, un paquet ou une unité">
                   <span class="mx-1">/</span>
                   <input type="number"
                         value="${ingInfo.buyVolume}"
                         step="0.01"
                         onchange="updateIngredientMasterData('${ing.name}', 'buyVolume', this.value)"
-                        class="w-16 p-1 border-b">
+                        class="w-16 p-1 border-b"
+                        title="Contenance ou quantité totale achetée (ex: 1 litre)">
                   <select onchange="updateIngredientMasterData('${ing.name}', 'buyUnit', this.value)"
-                          class="w-16 p-1 border-b">
+                          class="w-16 p-1 border-b"
+                          title="Unité dans laquelle vous achetez cet ingrédient (litre, g, pièce)">
                     <option value="liter" ${ingInfo.buyUnit === 'liter' ? 'selected' : ''}>liter</option>
                     <option value="g"     ${ingInfo.buyUnit === 'g'     ? 'selected' : ''}>g</option>
                     <option value="piece" ${ingInfo.buyUnit === 'piece' ? 'selected' : ''}>piece</option>
@@ -161,7 +196,7 @@ function renderSelected() {
         </div>
 
 
-          <button onclick="addNewIngredient(${i})" class="mt-2 text-sm text-blue-500 hover:text-blue-700">+ Ajouter un ingrédient</button>
+          <button onclick="addNewIngredient(${i})" class="mt-2 text-sm text-blue-500 hover:text-blue-700" title="Ajoutez un nouvel ingrédient à ce cocktail">+ Ajouter un ingrédient</button>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
@@ -181,7 +216,7 @@ function renderSelected() {
                    min="1"
                    max="5"
                    value="${c.popularity}"
-                   title="1: peu vendu \u2013 5: tr\u00e8s populaire"
+                   title="À quel point ce cocktail est populaire (1 = Rarement commandé, 5 = Très souvent)"
                    onchange="updateCocktailPopularity(${i}, parseInt(this.value))"
                    class="w-full p-1 border-b">
           </div>
@@ -189,9 +224,9 @@ function renderSelected() {
 
         <div class="mt-3 pt-2 border-t">
           <div class="flex justify-between">
-            <span class="text-sm">Coût: <span class="cost-amount">${Math.round(totalCost)}</span> FCFA</span>
+            <span class="text-sm" title="Combien coûte ce cocktail à produire">Coût: <span class="cost-amount">${Math.round(totalCost)}</span> FCFA</span>
             <span class="text-sm">Prix: ${Math.round(c.price)} FCFA</span>
-            <span class="text-sm font-medium ${marginColor}">Marge: <span class="margin-percentage">${marginPercent}</span>%</span>
+            <span class="text-sm font-medium ${marginColor}" title="Combien vous gagnez si vous vendez à ce prix">Marge: <span class="margin-percentage">${marginPercent}</span>%</span>
           </div>
         </div>
 
@@ -388,6 +423,16 @@ function updateCocktailPopularity(index, popularity) {
   if (selected[index]) {
     selected[index].popularity = Math.min(5, Math.max(1, popularity));
     renderSelected();
+  }
+}
+
+// Update cocktail name and refresh UI
+function updateCocktailName(index, newName) {
+  if (selected[index]) {
+    const name = newName.trim() || 'Sans nom';
+    selected[index].name = name;
+    renderSelected();
+    renderCocktailList();
   }
 }
 
@@ -666,7 +711,10 @@ if (typeof module !== 'undefined') {
     calcTotalCost,
     generateMenu,
     __setSelected: s => { selected = s; },
-    renderCocktailList
+    renderCocktailList,
+    renderSelected,
+    addCustomCocktail,
+    updateCocktailName
   };
 }
 
