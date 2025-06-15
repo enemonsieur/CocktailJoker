@@ -12,22 +12,39 @@
 
   <div class="max-w-screen-lg mx-auto px-4 py-4 md:py-8">
 
+  <!-- Intro section for first-time visitors -->
+  <div id="intro-section" class="text-center bg-white p-6 rounded-lg shadow mb-8">
+    <h2 class="text-xl font-bold mb-2">BAR ? HÔTEL ? RESTAURANT ?</h2>
+    <p class="mb-4">Et vous avez l’impression que votre bar ne rapporte pas ?</p>
+    <ul class="list-disc list-inside text-left max-w-md mx-auto mb-4">
+      <li>Les vrais prix de +65 ingrédients locaux</li>
+      <li>Plus de 25 cocktails les plus utilisés dans les bars locaux</li>
+      <li>L’avis des experts mixologues de Douala</li>
+    </ul>
+    <button id="start-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded shadow">Commencer gratuitement</button>
+  </div>
+
   <!-- Cocktail list buttons will mount here -->
-  <div id="cocktail-list" class="mb-8"></div>
+  <div id="cocktail-list" class="mb-8" title="Cliquez pour ajouter un cocktail que vous servez dans votre bar"></div>
 
   <!-- Selected cocktails & cost analysis will mount here -->
-  <div id="selected-cocktails" class="mb-8"></div>
+  <div id="selected-cocktails" class="mb-8" style="display:none"></div>
 
   <!-- Inputs for sales estimation -->
-  <div id="sales-inputs" class="mb-6 border-b border-gray-300 pb-4 grid grid-cols-2 gap-4">
-    <p class="text-sm font-semibold mb-2 col-span-2">Estimez vos ventes pour mieux calculer vos marges</p>
-    <div>
-      <p class="text-sm font-medium mb-1">Week-end</p>
-      <input id="weekend-input" type="number" title="Cocktails vendus le samedi et dimanche" class="w-full p-2 border rounded">
+  <div id="sales-estimation" class="hidden mb-6 border-b border-gray-300 pb-4 grid grid-cols-2 gap-4" style="display:none">
+    <p class="text-sm font-semibold col-span-2">Estimez vos ventes pour mieux calculer vos marges</p>
+    <p class="text-xs text-gray-600 mb-2 col-span-2">Pour mieux estimer vos marges, entrez le nombre de cocktails que votre bar vend en :</p>
+    <div class="col-span-2">
+      <p class="text-sm font-medium mb-1">Revenus mensuels bruts</p>
+      <input id="gross-revenue-input" type="number" title="Si vous connaissez vos revenus mensuels totaux, entrez-les ici pour un meilleur calcul de marge" class="w-full p-2 border rounded">
     </div>
     <div>
       <p class="text-sm font-medium mb-1">Semaine</p>
-      <input id="weekday-input" type="number" title="Cocktails vendus du lundi au vendredi" class="w-full p-2 border rounded">
+      <input id="weekday-input" type="number" required title="Période de faible activité (ex: lundi à jeudi)" class="w-full p-2 border rounded">
+    </div>
+    <div>
+      <p class="text-sm font-medium mb-1">Week-End</p>
+      <input id="weekend-input" type="number" required title="Période de forte activité (ex: vendredi à dimanche)" class="w-full p-2 border rounded">
     </div>
   </div>
 
@@ -41,10 +58,10 @@
 
 
   <!-- Summary table will mount here -->
-  <div id="menu-summary"></div>
+  <div id="menu-summary" class="hidden" style="display:none"></div>
 
   <!-- Export (save & WhatsApp) button -->
-  <div id="export-section" class="text-center mb-8 mt-4">
+  <div id="export-section" class="hidden text-center mb-8 mt-4" style="display:none">
     <!-- Full-width button on mobile -->
     <button onclick="exportMenu()" class="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-bold px-6 py-3 rounded-lg transition-colors duration-200">
       Sauvegarder Votre Menu et Marges
