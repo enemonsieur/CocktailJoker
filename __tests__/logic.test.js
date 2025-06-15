@@ -1,5 +1,11 @@
 /** @jest-environment jsdom */
-const { calcTotalCost, generateMenu, __setSelected } = require('../logic.js');
+const {
+  calcTotalCost,
+  generateMenu,
+  __setSelected,
+  renderSelected,
+  addCustomCocktail
+} = require('../logic.js');
 
 describe('calcTotalCost', () => {
   beforeEach(() => {
@@ -88,4 +94,19 @@ describe('index.html inputs', () => {
     expect(weekend.type).toBe('number');
     expect(weekday.type).toBe('number');
   });
+});
+
+test('New custom cocktail appears on click', () => {
+  document.body.innerHTML = '<div id="cocktail-list"></div><div id="selected-cocktails"></div><div id="menu-summary"></div>';
+  __setSelected([]);
+  global.cocktails = [];
+  addCustomCocktail();
+  const name = document.querySelector('#selected-cocktails h3').textContent;
+  expect(name).toBe('Nouveau cocktail');
+});
+
+test('Rendering empty ingredients doesn\'t crash', () => {
+  document.body.innerHTML = '<div id="selected-cocktails"></div><div id="menu-summary"></div>';
+  __setSelected([{ name: 'Test', price: 1000, popularity: 3, ingredients: [{ name: '', volume: 0 }] }]);
+  expect(() => renderSelected()).not.toThrow();
 });

@@ -17,6 +17,24 @@ function addCocktail(name) {
   }
 }
 
+// Add a blank custom cocktail for the user to fill in
+function addCustomCocktail() {
+  const newCocktail = {
+    name: "Nouveau cocktail",
+    price: 0,
+    popularity: 3,
+    ingredients: [
+      { name: "", volume: 0 },
+      { name: "", volume: 0 },
+      { name: "", volume: 0 }
+    ]
+  };
+
+  selected.push(newCocktail);
+  renderSelected();
+  renderCocktailList();
+}
+
 // Renders the initial list of cocktail buttons
 function renderCocktailList() {
   const div = document.getElementById("cocktail-list");
@@ -68,6 +86,13 @@ function renderCocktailList() {
   if (cocktails.some(c => c.popularity < 4)) {
     div.appendChild(toggleButton);
   }
+
+  // Button to let the user create a brand new cocktail
+  const createBtn = document.createElement('button');
+  createBtn.className = 'bg-green-500 text-white font-bold py-2 px-4 rounded-md m-1 hover:bg-green-600';
+  createBtn.textContent = '+ Créer un cocktail';
+  createBtn.onclick = () => addCustomCocktail();
+  div.appendChild(createBtn);
 }
 
 // Renders the cards for each selected cocktail
@@ -666,7 +691,9 @@ if (typeof module !== 'undefined') {
     calcTotalCost,
     generateMenu,
     __setSelected: s => { selected = s; },
-    renderCocktailList
+    renderCocktailList,
+    renderSelected,
+    addCustomCocktail
   };
 }
 
