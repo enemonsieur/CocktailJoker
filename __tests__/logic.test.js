@@ -4,7 +4,10 @@ const {
   generateMenu,
   __setSelected,
   renderSelected,
-  addCustomCocktail
+  addCustomCocktail,
+  updateCocktailName,
+  renderCocktailList
+
 } = require('../logic.js');
 
 describe('calcTotalCost', () => {
@@ -101,7 +104,8 @@ test('New custom cocktail appears on click', () => {
   __setSelected([]);
   global.cocktails = [];
   addCustomCocktail();
-  const name = document.querySelector('#selected-cocktails h3').textContent;
+  const name = document.querySelector('#selected-cocktails input[type="text"]').value;
+
   expect(name).toBe('Nouveau cocktail');
 });
 
@@ -109,4 +113,35 @@ test('Rendering empty ingredients doesn\'t crash', () => {
   document.body.innerHTML = '<div id="selected-cocktails"></div><div id="menu-summary"></div>';
   __setSelected([{ name: 'Test', price: 1000, popularity: 3, ingredients: [{ name: '', volume: 0 }] }]);
   expect(() => renderSelected()).not.toThrow();
+});
+
+test('Renaming a selected cocktail updates button state', () => {
+  document.body.innerHTML = '<div id="cocktail-list"></div><div id="selected-cocktails"></div><div id="menu-summary"></div>';
+  __setSelected([{ name: 'Original', price: 1000, popularity: 3, ingredients: [] }]);
+  global.cocktails = [{ name: 'Original', price: 1000, popularity: 5 }];
+  renderCocktailList();
+  renderSelected();
+  updateCocktailName(0, 'Renamed');
+  const input = document.querySelector('#selected-cocktails input[type="text"]');
+  expect(input.value).toBe('Renamed');
+  const btn = [...document.querySelectorAll('#cocktail-list button')].find(b => b.textContent.includes('Original'));
+  expect(btn.textContent.startsWith('+')).toBe(true);
+});
+
+test('Cocktail selection button has tooltip', () => {
+  document.body.innerHTML = '<div id="cocktail-list"></div>';
+  __setSelected([]);
+  global.cocktails = [{ name: 'Demo', price: 1000, popularity: 5 }];
+  renderCocktailList();
+  const button = document.querySelector('#cocktail-list button');
+  expect(button.title).toBe('Sélectionnez un cocktail que vous avez dans votre bar');
+});
+
+test('Ingredient remove button has tooltip', () => {
+  document.body.innerHTML = '<div id="selected-cocktails"></div><div id="menu-summary"></div>';
+  __setSelected([{ name: 'T', price: 0, popularity: 3, ingredients: [{ name: 'Gin', volume: 4 }] }]);
+  global.masterIngredients = { Gin: { unitServed: 'cl', buyVolume: 1, buyUnit: 'liter', price: 0 } };
+  renderSelected();
+  const btn = document.querySelector('#selected-cocktails button[title="Supprimer cet ingrédient"]');
+  expect(btn).not.toBeNull();
 });
