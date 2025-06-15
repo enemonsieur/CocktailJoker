@@ -104,9 +104,9 @@ test('New custom cocktail appears on click', () => {
   __setSelected([]);
   global.cocktails = [];
   addCustomCocktail();
-  const name = document.querySelector('#selected-cocktails input[type="text"]').value;
+  const nameInput = document.querySelector('#selected-cocktails input[type="text"]');
+  expect(nameInput.value).toBe('Nouveau cocktail');
 
-  expect(name).toBe('Nouveau cocktail');
 });
 
 test('Rendering empty ingredients doesn\'t crash', () => {

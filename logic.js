@@ -77,7 +77,8 @@ function renderCocktailList() {
   // Add "Show More/Less" button
   const toggleButton = document.createElement('button');
   toggleButton.className = 'w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-md m-1';
-  toggleButton.textContent = showAllCocktails ? 'Voir moins...' : 'Voir tous les cocktails...';
+  toggleButton.innerHTML = (showAllCocktails ? 'Voir moins...' : 'Voir tous les cocktails...') +
+    ' <span class="ml-1 cursor-help" title="Afficher la liste complète des cocktails disponibles">🛈</span>';
   toggleButton.onclick = () => {
     showAllCocktails = !showAllCocktails;
     renderCocktailList();
@@ -91,8 +92,7 @@ function renderCocktailList() {
   // Button to let the user create a brand new cocktail
   const createBtn = document.createElement('button');
   createBtn.className = 'bg-green-500 text-white font-bold py-2 px-4 rounded-md m-1 hover:bg-green-600';
-  createBtn.textContent = '+ Créer un cocktail';
-  createBtn.title = 'Cliquez pour créer un cocktail personnalisé avec vos propres ingrédients';
+  createBtn.innerHTML = '+ Créer un cocktail <span class="ml-1 text-white/80 cursor-help" title="Cliquez pour créer un cocktail personnalisé avec vos propres ingrédients">🛈</span>';
 
   createBtn.onclick = () => addCustomCocktail();
   div.appendChild(createBtn);
@@ -117,7 +117,10 @@ function renderSelected() {
     return `
       <div class="bg-white rounded-lg p-4 mb-4 border">
         <div class="flex justify-between items-center mb-3">
-          <h3 class="text-lg font-semibold break-words" title="Cliquez pour modifier le nom du cocktail personnalisé">${c.name}</h3>
+          <input type="text"
+                 value="${c.name}"
+                 onchange="updateCocktailName(${i}, this.value)"
+                 class="text-lg font-semibold break-words flex-grow mr-2 border-b focus:outline-none">
           <button onclick="removeCocktail(${i})" class="text-red-500" title="Supprimer ce cocktail de votre sélection">×</button>
 
         </div>
@@ -127,8 +130,8 @@ function renderSelected() {
           <div class="grid grid-cols-11 gap-2 mb-1 text-xs text-gray-500">
             <div class="col-span-1"></div>
             <div class="col-span-4">Ingrédient</div>
-            <div class="col-span-2">Volume</div>
-            <div class="col-span-4">Prix d'achat</div>
+            <div class="col-span-2">Volume <span class="ml-1 cursor-help" title="Volume utilisé par cocktail">🛈</span></div>
+            <div class="col-span-4">Prix d'achat <span class="ml-1 cursor-help" title="Coût d’achat de l’ingrédient et sa quantité à l’achat">🛈</span></div>
           </div>
 
         <div id="ingredients-${i}" class="space-y-2">
@@ -137,6 +140,7 @@ function renderSelected() {
             return `
               <div class="grid grid-cols-11 gap-2 items-center">
                 <button onclick="removeIngredient(${i}, ${idx})" class="text-red-500 col-span-1" title="Retirer cet ingrédient du cocktail">×</button>
+
 
 
                 <!-- Ingredient name input -->
@@ -206,11 +210,14 @@ function renderSelected() {
           </div>
 
           <div>
-            <div class="text-xs text-gray-500 mb-1">Popularité (1-5)</div>
+            <div class="text-xs text-gray-500 mb-1">Popularité (1-5)
+              <span class="ml-1 cursor-help" title="À quel point ce cocktail est populaire (1 = Rarement vendu, 5 = Très souvent vendu)">🛈</span>
+            </div>
               <input type="number"
                    min="1"
                    max="5"
                    value="${c.popularity}"
+
 
 
                    title="À quel point ce cocktail est populaire (1 = Rarement commandé, 5 = Très souvent)"
@@ -221,9 +228,18 @@ function renderSelected() {
 
         <div class="mt-3 pt-2 border-t">
           <div class="flex justify-between">
-            <span class="text-sm" title="Combien ce cocktail vous coûte à produire">Coût: <span class="cost-amount">${Math.round(totalCost)}</span> FCFA</span>
-            <span class="text-sm" title="Prix auquel vous vendez ce cocktail">Prix: ${Math.round(c.price)} FCFA</span>
-            <span class="text-sm font-medium ${marginColor}" title="Combien vous gagnez avec ce prix (marge = profit/prix de vente)">Marge: <span class="margin-percentage">${marginPercent}</span>%</span>
+            <span class="text-sm">Coût
+              <span class="ml-1 cursor-help" title="Combien ce cocktail vous coûte à produire">🛈</span>:
+              <span class="cost-amount">${Math.round(totalCost)}</span> FCFA
+            </span>
+            <span class="text-sm">Prix
+              <span class="ml-1 cursor-help" title="Prix auquel vous vendez ce cocktail">🛈</span>:
+              ${Math.round(c.price)} FCFA
+            </span>
+            <span class="text-sm font-medium ${marginColor}">Marge
+              <span class="ml-1 cursor-help" title="Combien vous gagnez avec ce prix (marge = profit/prix de vente)">🛈</span>:
+              <span class="margin-percentage">${marginPercent}</span>%
+            </span>
 
           </div>
         </div>
@@ -240,13 +256,14 @@ function renderSelected() {
 
   // Toggle visibility of blocks depending on selection
   const show = selected.length > 0;
-  document.getElementById('selected-cocktails').style.display = show ? 'block' : 'none';
-  const est = document.getElementById('sales-estimation');
-  if (est) est.style.display = show ? 'block' : 'none';
-  const exp = document.getElementById('export-section');
-  if (exp) exp.style.display = show ? 'block' : 'none';
-  const summary = document.getElementById('menu-summary');
-  if (summary) summary.style.display = 'none';
+  document.getElementById('selected-cocktails')?.classList.toggle('hidden', !show);
+  document.getElementById('sales-estimation')?.classList.toggle('hidden', !show);
+  document.getElementById('export-section')?.classList.toggle('hidden', !show);
+  document.getElementById('menu-summary')?.classList.toggle('hidden', true);
+
+  // Generate-button only useful after at least 1 cocktail
+  document.querySelector('[onclick="generateMenu()"]')
+          ?.classList.toggle('hidden', !show);
 }
 
 function updateIngredientUnitServed(cocktailIndex, ingredientIndex, newUnit) {
@@ -427,7 +444,14 @@ function updateCocktailPrice(index, price) {
   }
 }
 
-// Update cocktail popularity
+// Update cocktail name
+function updateCocktailName(index, name) {
+  if (selected[index]) {
+    selected[index].name = name;
+    renderSelected();
+  }
+}
+
 function updateCocktailPopularity(index, popularity) {
   if (selected[index]) {
     selected[index].popularity = Math.min(5, Math.max(1, popularity));
@@ -471,7 +495,7 @@ function generateMenu() {
   const monthlyTotal = weeklyTotal * 4;
 
   const revenueField = document.getElementById('gross-revenue-input');
-  const manualRevenue = revenueField ? +revenueField.value || 0 : 0;
+  const manualRevenue = revenueField ? parseInt(revenueField.value, 10) || 0 : 0;
 
   document.getElementById('monthly-summary')?.remove();
 
@@ -521,7 +545,9 @@ function generateMenu() {
     <div class="flex justify-between items-center mb-4">
       <h3 class="text-xl font-bold text-gray-800">Résumé du Menu</h3>
       <div class="text-sm">
-        <span class="text-gray-600" title="Votre marge globale sur tous les cocktails sélectionnés">Marge globale: </span>
+        <span class="text-gray-600">Marge globale
+          <span class="ml-1 cursor-help" title="Votre marge globale sur tous les cocktails sélectionnés">🛈</span>:
+        </span>
 
         <span class="font-medium ${marginColor}" title="Objectif: entre 75% et 90%. En dessous: prix trop bas ou coût trop élevé. Au-dessus: marge excessive potentielle">${Math.round(overallMargin)}%</span>
       </div>
@@ -536,6 +562,7 @@ function generateMenu() {
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prix</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Ce que vous gagnez par cocktail après retrait des coûts">Marge</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Les cocktails les plus populaires font le gros de vos revenus. Prix compétitifs recommandés (< 80%)">Popularité</th>
+
 
           </tr>
         </thead>
@@ -583,9 +610,9 @@ function generateMenu() {
   }
 
   const summaryEl = document.getElementById('menu-summary');
-  if (summaryEl) summaryEl.style.display = 'block';
+  if (summaryEl) summaryEl.classList.remove('hidden');
   const exportEl = document.getElementById('export-section');
-  if (exportEl) exportEl.style.display = 'block';
+  if (exportEl) exportEl.classList.remove('hidden');
 
 }
 
@@ -679,14 +706,24 @@ window.exportMenu = exportMenu;
 
 // Initialize the app when the page loads
 document.addEventListener('DOMContentLoaded', () => {
+  // 👉 keep initial render calls but container is hidden → no visual flash
   renderCocktailList();
   renderSelected();
-  const startBtn = document.getElementById('start-btn');
-  if (startBtn) {
-    startBtn.addEventListener('click', () => {
-      document.getElementById('cocktail-list')?.scrollIntoView({ behavior: 'smooth' });
-    });
-  }
+
+  const reveal = () => {
+    ['cocktail-list',
+     'sales-estimation',
+     'scroll-cta'
+    ].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+
+    // scroll to first interactive bloc
+    document.getElementById('cocktail-list')
+            ?.scrollIntoView({ behavior:'smooth' });
+  };
+
+  document.getElementById('start-btn')?.addEventListener('click', reveal);
+  document.getElementById('scroll-cta')?.addEventListener('click', reveal);
+
 });
 
 // Helper function to display messages

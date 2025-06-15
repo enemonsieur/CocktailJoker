@@ -6,6 +6,7 @@
   <title>Optimisateur de Marges de Cocktails</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>button,[onclick]{cursor:pointer;}</style>
 </head>
 
 <body class="bg-gray-100 text-gray-800">
@@ -13,38 +14,76 @@
   <div class="max-w-screen-lg mx-auto px-4 py-4 md:py-8">
 
   <!-- Intro section for first-time visitors -->
-  <div id="intro-section" class="text-center bg-white p-6 rounded-lg shadow mb-8">
-    <h2 class="text-xl font-bold mb-2">BAR ? HÔTEL ? RESTAURANT ?</h2>
-    <p class="mb-4">Et vous avez l’impression que votre bar ne rapporte pas ?</p>
-    <ul class="list-disc list-inside text-left max-w-md mx-auto mb-4">
-      <li>Les vrais prix de +65 ingrédients locaux</li>
-      <li>Plus de 25 cocktails les plus utilisés dans les bars locaux</li>
-      <li>L’avis des experts mixologues de Douala</li>
-    </ul>
-    <button id="start-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded shadow">Commencer gratuitement</button>
+  <div id="intro-section" class="bg-white rounded-xl shadow-md p-8 max-w-3xl mx-auto mt-10 text-center">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">
+      📉 Votre bar ne rapporte pas autant qu’il devrait ?
+    </h1>
+    <p class="text-lg text-gray-700 mb-6">
+      Vous gérez un <strong>BAR</strong> ? Un <strong>HÔTEL</strong> ?
+      Un <strong>RESTAURANT</strong> ?
+    </p>
+    <p class="text-base text-gray-600 mb-6">
+      En moins de 45 secondes, <strong>notre Web App gratuite</strong> vous montre
+      <span class="text-green-600 font-medium">combien vous gagnez (ou perdez)</span>
+      sur chaque cocktail.
+    </p>
+    <div class="bg-blue-50 rounded-lg px-6 py-4 text-left text-sm text-blue-900 border-l-4 border-blue-400 mb-6">
+      <p class="mb-2 font-semibold">🔍 Notre équipe a collecté :</p>
+      <ul class="list-disc pl-5 space-y-1">
+        <li>Les <strong>vrais prix</strong> de +65 ingrédients locaux</li>
+        <li>Les <strong>25 cocktails</strong> les plus vendus dans les bars de Douala</li>
+        <li>Les <strong>conseils de mixologues experts</strong> pour ajuster vos marges</li>
+      </ul>
+    </div>
+    <p class="text-gray-800 mb-6 text-base">
+      🧠 Vous saurez en un clic si vos cocktails sont <strong>rentables</strong>,
+      et comment les améliorer.
+    </p>
+    <button id="start-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-md">
+      ✅ Commencer gratuitement
+    </button>
+    <p class="text-xs text-gray-400 mt-4 italic">Aucune inscription nécessaire</p>
   </div>
+    <button id="scroll-cta" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded shadow hidden">Commencer gratuitement</button>
 
   <!-- Cocktail list buttons will mount here -->
-  <div id="cocktail-list" class="mb-8" title="Cliquez pour ajouter un cocktail que vous servez dans votre bar"></div>
+  <div id="cocktail-list" class="hidden mb-8" title="Cliquez pour ajouter un cocktail que vous servez dans votre bar"></div>
 
   <!-- Selected cocktails & cost analysis will mount here -->
-  <div id="selected-cocktails" class="mb-8" style="display:none"></div>
+  <div id="selected-cocktails" class="hidden mb-8" ></div>
 
   <!-- Inputs for sales estimation -->
-  <div id="sales-estimation" class="hidden mb-6 border-b border-gray-300 pb-4 grid grid-cols-2 gap-4" style="display:none">
+  <div id="sales-estimation" class="hidden mb-6 border-b border-gray-300 pb-4 grid grid-cols-2 gap-4" >
     <p class="text-sm font-semibold col-span-2">Estimez vos ventes pour mieux calculer vos marges</p>
     <p class="text-xs text-gray-600 mb-2 col-span-2">Pour mieux estimer vos marges, entrez le nombre de cocktails que votre bar vend en :</p>
     <div class="col-span-2">
-      <p class="text-sm font-medium mb-1">Revenus mensuels bruts</p>
-      <input id="gross-revenue-input" type="number" title="Si vous connaissez vos revenus mensuels totaux, entrez-les ici pour un meilleur calcul de marge" class="w-full p-2 border rounded">
+      <p class="text-sm font-medium mb-1">Revenus mensuels bruts
+        <span class="ml-1 text-gray-400 cursor-help" title="Si vous connaissez vos revenus mensuels totaux, entrez-les ici pour un meilleur calcul de marge">🛈</span>
+      </p>
+      <select id="gross-revenue-input" class="w-full p-2 border rounded">
+        <option value=""></option>
+        <option value="500000">500K</option>
+        <option value="750000">750K</option>
+        <option value="1000000">1M</option>
+        <option value="1500000">1.5M</option>
+        <option value="2000000">2M</option>
+        <option value="2500000">2.5M</option>
+        <option value="3000000">3M</option>
+        <option value="4000000">4M</option>
+        <option value="5000000">5M+</option>
+      </select>
     </div>
     <div>
-      <p class="text-sm font-medium mb-1">Semaine</p>
-      <input id="weekday-input" type="number" required title="Période de faible activité (ex: lundi à jeudi)" class="w-full p-2 border rounded">
+      <p class="text-sm font-medium mb-1">Semaine
+        <span class="ml-1 text-gray-400 cursor-help" title="Période de faible activité (ex: lundi à jeudi)">🛈</span>
+      </p>
+      <input id="weekday-input" type="number" required class="w-full p-2 border rounded">
     </div>
     <div>
-      <p class="text-sm font-medium mb-1">Week-End</p>
-      <input id="weekend-input" type="number" required title="Période de forte activité (ex: vendredi à samedi)" class="w-full p-2 border rounded">
+      <p class="text-sm font-medium mb-1">Week-End
+        <span class="ml-1 text-gray-400 cursor-help" title="Période de forte activité (ex: vendredi à dimanche)">🛈</span>
+      </p>
+      <input id="weekend-input" type="number" required class="w-full p-2 border rounded">
 
     </div>
   </div>
@@ -59,10 +98,11 @@
 
 
   <!-- Summary table will mount here -->
-  <div id="menu-summary" class="hidden" style="display:none"></div>
+  <div id="menu-summary" class="hidden" ></div>
 
   <!-- Export (save & WhatsApp) button -->
-  <div id="export-section" class="hidden text-center mb-8 mt-4" style="display:none">
+  <div id="export-section" class="hidden text-center mb-8 mt-4" >
+
     <!-- Full-width button on mobile -->
     <button onclick="exportMenu()" class="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-bold px-6 py-3 rounded-lg transition-colors duration-200">
       Sauvegarder Votre Menu et Marges
