@@ -120,7 +120,10 @@ function renderSelected() {
     return `
       <div class="bg-white rounded-lg p-4 mb-4 border">
         <div class="flex justify-between items-center mb-3">
-          <h3 class="text-lg font-semibold break-words">${c.name}</h3>
+          <input type="text"
+                 value="${c.name}"
+                 onchange="updateCocktailName(${i}, this.value)"
+                 class="text-lg font-semibold break-words flex-grow mr-2 border-b">
           <button onclick="removeCocktail(${i})" class="text-red-500">×</button>
         </div>
 
@@ -416,6 +419,16 @@ function updateCocktailPopularity(index, popularity) {
   }
 }
 
+// Update cocktail name and refresh UI
+function updateCocktailName(index, newName) {
+  if (selected[index]) {
+    const name = newName.trim() || 'Sans nom';
+    selected[index].name = name;
+    renderSelected();
+    renderCocktailList();
+  }
+}
+
 // Generate menu summary
 function generateMenu() {
   const container = document.getElementById("menu-summary");
@@ -693,7 +706,8 @@ if (typeof module !== 'undefined') {
     __setSelected: s => { selected = s; },
     renderCocktailList,
     renderSelected,
-    addCustomCocktail
+    addCustomCocktail,
+    updateCocktailName
   };
 }
 
