@@ -35,16 +35,33 @@
     <p class="text-sm font-semibold col-span-2">Estimez vos ventes pour mieux calculer vos marges</p>
     <p class="text-xs text-gray-600 mb-2 col-span-2">Pour mieux estimer vos marges, entrez le nombre de cocktails que votre bar vend en :</p>
     <div class="col-span-2">
-      <p class="text-sm font-medium mb-1">Revenus mensuels bruts</p>
-      <input id="gross-revenue-input" type="number" title="Si vous connaissez vos revenus mensuels totaux, entrez-les ici pour un meilleur calcul de marge" class="w-full p-2 border rounded">
+      <p class="text-sm font-medium mb-1">Revenus mensuels bruts
+        <span class="ml-1 text-gray-400 cursor-help" title="Si vous connaissez vos revenus mensuels totaux, entrez-les ici pour un meilleur calcul de marge">🛈</span>
+      </p>
+      <select id="gross-revenue-input" class="w-full p-2 border rounded">
+        <option value=""></option>
+        <option value="500000">500K</option>
+        <option value="750000">750K</option>
+        <option value="1000000">1M</option>
+        <option value="1500000">1.5M</option>
+        <option value="2000000">2M</option>
+        <option value="2500000">2.5M</option>
+        <option value="3000000">3M</option>
+        <option value="4000000">4M</option>
+        <option value="5000000">5M+</option>
+      </select>
     </div>
     <div>
-      <p class="text-sm font-medium mb-1">Semaine</p>
-      <input id="weekday-input" type="number" required title="Période de faible activité (ex: lundi à jeudi)" class="w-full p-2 border rounded">
+      <p class="text-sm font-medium mb-1">Semaine
+        <span class="ml-1 text-gray-400 cursor-help" title="Période de faible activité (ex: lundi à jeudi)">🛈</span>
+      </p>
+      <input id="weekday-input" type="number" required class="w-full p-2 border rounded">
     </div>
     <div>
-      <p class="text-sm font-medium mb-1">Week-End</p>
-      <input id="weekend-input" type="number" required title="Période de forte activité (ex: vendredi à samedi)" class="w-full p-2 border rounded">
+      <p class="text-sm font-medium mb-1">Week-End
+        <span class="ml-1 text-gray-400 cursor-help" title="Période de forte activité (ex: vendredi à dimanche)">🛈</span>
+      </p>
+      <input id="weekend-input" type="number" required class="w-full p-2 border rounded">
 
     </div>
   </div>

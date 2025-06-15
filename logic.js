@@ -60,11 +60,11 @@ function renderCocktailList() {
                       ${active 
                         ? 'bg-blue-500 text-white' 
                         : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`;
-    button.title = 'Sélectionnez un cocktail que vous avez dans votre bar';
-    button.textContent = `${active ? '✓' : '+'} ${c.name}`;
-    button.onclick = () => {
-      if (isSelected(c.name)) {
-        const idx = selected.findIndex(x => x.name === c.name);
+  toggleButton.innerHTML = (showAllCocktails ? 'Voir moins...' : 'Voir tous les cocktails...') +
+    ' <span class="ml-1 cursor-help" title="Afficher la liste complète des cocktails disponibles">🛈</span>';
+  createBtn.innerHTML = '+ Créer un cocktail <span class="ml-1 text-white/80 cursor-help" title="Cliquez pour créer un cocktail personnalisé avec vos propres ingrédients">🛈</span>';
+            <div class="col-span-2">Volume <span class="ml-1 cursor-help" title="Volume utilisé par cocktail">🛈</span></div>
+            <div class="col-span-4">Prix d'achat <span class="ml-1 cursor-help" title="Coût d’achat de l’ingrédient et sa quantité à l’achat">🛈</span></div>
         if (idx !== -1) removeCocktail(idx);
       } else {
         addCocktail(c.name);
@@ -172,11 +172,21 @@ function renderSelected() {
                         class="w-16 p-1 border-b"
                         title="Prix d'achat pour une bouteille, un paquet ou une unité">
                   <span class="mx-1">/</span>
-                  <input type="number"
-                        value="${ingInfo.buyVolume}"
-                        step="0.01"
-                        onchange="updateIngredientMasterData('${ing.name}', 'buyVolume', this.value)"
-                        class="w-16 p-1 border-b"
+            <div class="text-xs text-gray-500 mb-1">Popularité (1-5)
+              <span class="ml-1 cursor-help" title="À quel point ce cocktail est populaire (1 = Rarement vendu, 5 = Très souvent vendu)">🛈</span>
+            </div>
+            <span class="text-sm">Coût
+              <span class="ml-1 cursor-help" title="Combien ce cocktail vous coûte à produire">🛈</span>:
+              <span class="cost-amount">${Math.round(totalCost)}</span> FCFA
+            </span>
+            <span class="text-sm">Prix
+              <span class="ml-1 cursor-help" title="Prix auquel vous vendez ce cocktail">🛈</span>:
+              ${Math.round(c.price)} FCFA
+            </span>
+            <span class="text-sm font-medium ${marginColor}">Marge
+              <span class="ml-1 cursor-help" title="Combien vous gagnez avec ce prix (marge = profit/prix de vente)">🛈</span>:
+              <span class="margin-percentage">${marginPercent}</span>%
+            </span>
                         title="Contenance ou quantité totale achetée (ex: 1 litre)">
                   <select onchange="updateIngredientMasterData('${ing.name}', 'buyUnit', this.value)"
                           class="w-16 p-1 border-b"
@@ -425,9 +435,11 @@ function updateCocktailPrice(index, price) {
     selected[index].price = price;
     renderSelected();
   }
-}
+  const manualRevenue = revenueField ? parseInt(revenueField.value, 10) || 0 : 0;
 
-// Update cocktail popularity
+        <span class="text-gray-600">Marge globale
+          <span class="ml-1 cursor-help" title="Votre marge globale sur tous les cocktails sélectionnés">🛈</span>:
+        </span>
 function updateCocktailPopularity(index, popularity) {
   if (selected[index]) {
     selected[index].popularity = Math.min(5, Math.max(1, popularity));

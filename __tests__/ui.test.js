@@ -42,3 +42,15 @@ test('Monthly KPI color reflects low margin', () => {
   const span = document.querySelector('#monthly-summary span');
   expect(span.className).toContain('text-red-600');
 });
+
+test('Manual revenue dropdown overrides revenue', () => {
+  document.body.innerHTML = fs.readFileSync('index.html', 'utf8');
+  document.getElementById('weekend-input').value = '1';
+  document.getElementById('weekday-input').value = '1';
+  document.getElementById('gross-revenue-input').value = '1500000';
+  __setSelected([{ name: 'X', price: 1000, popularity: 3, ingredients: [] }]);
+  generateMenu();
+  const revenueText = document.querySelector('#monthly-summary span').textContent;
+  const digits = revenueText.replace(/\D/g, '');
+  expect(digits).toBe('1500000');
+});
