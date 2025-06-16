@@ -7,6 +7,7 @@ function doPost(e) {
     'Access-Control-Allow-Headers': 'Content-Type'
   };
 
+
   const data = JSON.parse(e.postData.contents);
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = ss.getSheets()[0];
@@ -59,4 +60,5 @@ function doGet() {
   return ContentService
     .createTextOutput('✅ Web App is running. Use POST to submit menu data.')
     .setMimeType(ContentService.MimeType.TEXT);
+
 }
