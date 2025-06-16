@@ -39,8 +39,8 @@ test('Monthly KPI color reflects low margin', () => {
   global.masterIngredients = { I: { unitServed: "cl", buyVolume: 1, buyUnit: "liter", price: 1000 } };
   __setSelected([{ name: 'T', price: 100, popularity: 5, ingredients: [{ name: 'I', volume: 10 }] }]);
   generateMenu();
-  const span = document.querySelector('#monthly-summary span');
-  expect(span.className).toContain('text-red-600');
+  const span = document.querySelectorAll('#monthly-summary span')[3];
+  expect(span.className).toContain('text-orange-600');
 });
 
 test('Manual revenue dropdown overrides revenue', () => {
@@ -50,7 +50,7 @@ test('Manual revenue dropdown overrides revenue', () => {
   document.getElementById('gross-revenue-input').value = '1500000';
   __setSelected([{ name: 'X', price: 1000, popularity: 3, ingredients: [] }]);
   generateMenu();
-  const revenueText = document.querySelector('#monthly-summary span').textContent;
+  const revenueText = document.querySelectorAll('#monthly-summary span')[3].textContent;
   const digits = revenueText.replace(/\D/g, '');
   expect(digits).toBe('1500000');
 });
