@@ -6,7 +6,11 @@
   <title>Optimisateur de Marges de Cocktails</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>button,[onclick]{cursor:pointer;}</style>
+  <style>
+    button,[onclick]{cursor:pointer;}
+    @keyframes pulse-slow{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+    .animate-pulse-slow{animation:pulse-slow 3s infinite;}
+  </style>
 </head>
 
 <body class="bg-gray-100 text-gray-800">
@@ -14,38 +18,43 @@
   <div class="max-w-screen-lg mx-auto px-4 py-4 md:py-8">
 
   <!-- Intro section for first-time visitors -->
-  <div id="intro-section" class="bg-white rounded-xl shadow-md p-8 max-w-3xl mx-auto mt-10 text-center">
+  <div id="intro-section" class="bg-white rounded-xl shadow-md p-8 max-w-2xl mx-auto mt-10 text-center">
     <h1 class="text-3xl font-bold text-gray-900 mb-2">
       Votre Bar ne rapporte pas autant qu’il devrait ?
     </h1>
-    <p class="text-lg text-gray-700 mb-6">
-      Si vous êtes gérant d'un BAR, HÔTEL, RESTAURANT, CAFÉ, etc... 
+    <p class="mb-6 max-w-xl mx-auto leading-relaxed tracking-wide text-gray-700 text-base sm:text-lg lg:text-xl">
+      Si vous êtes gérant d'un BAR, HÔTEL, RESTAURANT, CAFÉ, etc...
       Vous connaissez le stress de s'assurer que le Bar rapporte de l'argent chaque mois,
       malgré les changements de produits, de barmen, et de clients...
     </p>
-    <p class="text-base text-gray-600 mb-6">
-      Avec <strong>notre Calculateur de Marges</strong>, vous saurez en mois de 5 min
-      <span class="text-green-600 font-medium">combien vous gagnez (ou perdez)</span>
+    <p class="text-gray-600 mb-6 text-base sm:text-lg lg:text-xl">
+      Avec <strong>notre Calculateur de Marges</strong>, vous saurez en moins de 5 min
+      combien vous <span class="text-green-600 font-semibold">gagnez</span> (ou <span class="text-red-500 font-semibold">perdez</span>)
       sur chaque cocktail, et dans <strong> tout le bar  !</strong>
     </p>
-    <div class="bg-blue-50 rounded-lg px-6 py-4 text-left text-sm text-blue-900 border-l-4 border-blue-400 mb-6">
-      <p class="mb-2 font-semibold">Comment? Notre équipe a collecté :</p>
-      <ul class="list-disc pl-5 space-y-1">
-        <li>Les <strong>vrais prix</strong> de +65 ingrédients locaux (Douala, Yaoundé)</li>
-        <li>Les <strong>25 cocktails</strong> les plus vendus dans les bars du Cameroun</li>
-        <li>L'<strong>expertise de mixologues</strong> pour déterminer les marges optimales!</li>
-      </ul>
+    <div class="bg-blue-50 rounded-lg px-6 py-4 shadow-md mb-6">
+      <div class="grid sm:grid-cols-3 gap-6 text-left text-sm text-gray-800">
+        <div>🔍 <strong>65+ Ingrédients</strong><br><span class="text-xs text-gray-600">Prix réels à Douala, Yaoundé</span></div>
+        <div>🍸 <strong>25 Cocktails</strong><br><span class="text-xs text-gray-600">Les plus populaires au Cameroun</span></div>
+        <div>🧠 <strong>Mixologues</strong><br><span class="text-xs text-gray-600">Expertise locale pour estimer vos marges</span></div>
+      </div>
     </div>
-    <p class="text-gray-800 mb-6 text-base">
+    <p class="text-gray-800 mb-6 text-base sm:text-lg lg:text-xl">
       🧠 Vous saurez en un clic quels cocktails ne sont pas <strong>rentables</strong>,
       et comment les améliorer !
     </p>
-    <button id="start-btn" onclick="startApp()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-md">
-      ✅ Commencer gratuitement
-    </button>
+    <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-11/12 sm:static sm:translate-x-0">
+      <button id="start-btn" onclick="startApp()" class="bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg text-xl py-4 px-8 shadow-lg hover:scale-105 transition-transform duration-200 animate-pulse-slow">
+        <span class="inline-flex items-center gap-2">Commencer gratuitement <span>➔</span></span>
+      </button>
+    </div>
     <p class="text-xs text-gray-400 mt-4 italic">Aucune inscription nécessaire</p>
   </div>
     <button id="scroll-cta" onclick="startApp()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded shadow hidden">Commencer gratuitement</button>
+
+  <div class="text-center mt-6 animate-bounce text-gray-400 text-xl sm:mt-10">
+    ↓
+  </div>
 
   <!-- Cocktail list buttons will mount here -->
   <div id="cocktail-list" class="hidden mb-8" title="Cliquez pour ajouter un cocktail que vous servez dans votre bar"></div>
