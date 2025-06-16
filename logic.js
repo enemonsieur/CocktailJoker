@@ -7,6 +7,20 @@ function isSelected(name) {
   return selected.some(c => c.name === name);
 }
 
+function getPopularityTooltip(pop, margin) {
+  if (pop >= 4 && margin > 90) {
+    return "⚠ Cocktail très populaire mais marge trop élevée — risque de perdre des clients sensibles au prix.";
+  } else if (pop >= 4 && margin < 75) {
+    return "✅ Cocktail populaire avec marge raisonnable.";
+  } else if (pop <= 2 && margin > 90) {
+    return "🤷‍♂️ Cocktail peu vendu mais très rentable. Peut rester à la carte.";
+  } else if (pop <= 2 && margin < 75) {
+    return "❌ Cocktail peu vendu et à faible marge — envisagez de le retirer.";
+  } else {
+    return "Popularité moyenne — à surveiller selon les ventes réelles.";
+  }
+}
+
 function addCocktail(name) {
   const cocktailBlueprint = cocktails.find(x => x.name === name);
   if (cocktailBlueprint && !isSelected(name)) {
@@ -573,7 +587,7 @@ function generateMenu() {
                   (Coût: ${Math.round(cocktail.cost)} FCFA)
                 </div>
               </td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" title="Les cocktails les plus populaires font le gros de vos revenus. Prix compétitifs recommandés (< 80%)">
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" title="${getPopularityTooltip(cocktail.popularity, cocktail.margin)}">
                 ${'★'.repeat(cocktail.popularity)}${'☆'.repeat(5 - cocktail.popularity)}
               </td>
             </tr>`;
@@ -584,23 +598,46 @@ function generateMenu() {
 
   const monthlyCard = `
     <div id="monthly-summary" class="bg-blue-50 p-4 rounded-lg my-6 text-sm text-blue-900">
-      <div class="grid sm:grid-cols-3 gap-3 text-center sm:text-left">
-        <p><strong>Cocktails / mois :</strong><br>${monthlyTotal}</p>
-        <p title="Revenu total généré par vos cocktails à leur prix de vente actuel"><strong>Ventes / mois :</strong><br><span class="${profitColor}">${totalRevenue.toLocaleString()} FCFA</span></p>
-        <p title="Ce que votre bar garde réellement après avoir payé les ingrédients"><strong>Revenus / mois :</strong><br><span class="${profitColor}">${totalProfit.toLocaleString()} FCFA</span></p>
+      <div class="grid sm:grid-cols-3 gap-6 text-center sm:text-left font-medium text-base">
+        <div>
+          <span class="text-gray-700 block font-semibold mb-1">Cocktails / mois :</span>
+          <span class="text-blue-800 text-lg font-bold">${monthlyTotal}</span>
+        </div>
+        <div>
+          <span class="text-gray-700 block font-semibold mb-1">Ventes / mois :</span>
+          <span class="text-orange-600 text-lg font-bold">${manualRevenue > 0 ? manualRevenue.toLocaleString() : totalRevenue.toLocaleString()} FCFA</span>
+        </div>
+        <div>
+          <span class="text-gray-700 block font-semibold mb-1">Revenus / mois :</span>
+          <span class="text-orange-600 text-lg font-bold">${Math.round(totalProfit).toLocaleString()} FCFA</span>
+        </div>
       </div>
     </div>`;
   container.insertAdjacentHTML('beforeend', monthlyCard);
 
   let helpMessage = '';
-  if (overallMargin > 89) {
-    helpMessage = 'Vos marges semblent trop hautes même pour un bar haut de gamme...<br>Vous pourriez augmenter vos revenus de 30% en les optimisant.<br>Besoin d\'aide ? Contactez-nous sur WhatsApp (Cliquez sur Sauvegarder)';
+  if (overallMargin > 88) {
+    helpMessage = `
+    <p class="text-sm text-gray-700 italic mt-2 leading-snug">
+      Vos <strong>marges semblent trop hautes</strong>, même pour un bar haut de gamme...<br>
+
+      <strong>Suggestion :</strong> Savez-vous qu'optimiser vos marges pourrait augmenter vos ventes de 30%.<br> 
+      Besoin d’aide ? Contactez-nous sur WhatsApp (Cliquez sur <em>Sauvegarder</em>).
+    </p>`;
   } else if (overallMargin < 75) {
-    helpMessage = 'Vos marges semblent trop basses pour un bar haut de gamme...<br>Vous gagnerez à optimiser vos prix.<br>Besoin d\'aide ? Contactez-nous sur WhatsApp (Cliquez sur Sauvegarder)';
+    helpMessage = `
+    <p class="text-sm text-gray-700 italic mt-2 leading-snug">
+      Vos <strong>marges semblent trop basses</strong>, ce qui peut mettre en péril la rentabilité.
+      Besoin d’aide pour optimizer vos marges? Contactez-nous sur WhatsApp (Cliquez sur <em>Sauvegarder</em> tout en bas). 
+    </p>`;
+  } else {
+    helpMessage = `
+    <p class="text-sm text-green-700 italic mt-2 leading-snug">
+      ✅ Vos marges sont bien équilibrées.<br>
+      P.S.: Besoin d’aide pour optimizer vos marges? Contactez-nous sur WhatsApp  
+    </p>`;
   }
-  if (helpMessage) {
-    container.insertAdjacentHTML('beforeend', `<p class="text-sm text-gray-700 italic mt-2">${helpMessage}</p>`);
-  }
+  container.insertAdjacentHTML('beforeend', helpMessage);
 
   const summaryEl = document.getElementById('menu-summary');
   if (summaryEl) summaryEl.classList.remove('hidden');
