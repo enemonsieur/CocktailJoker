@@ -531,8 +531,10 @@ function generateMenu() {
   let totalProfit = 0;
   summary.cocktails.forEach(c => {
     const estMonthly = Math.round(monthlyTotal * (c.popularity / popSum));
+    const estRevenue = estMonthly * c.price;
     const estProfit = estMonthly * (c.price - c.cost);
-    totalRevenue += estMonthly * c.price;
+    c.estimatedRevenue = estRevenue;
+    totalRevenue += estRevenue;
     totalProfit += estProfit;
   });
 
@@ -541,6 +543,10 @@ function generateMenu() {
     totalRevenue = manualRevenue;
     totalProfit = manualRevenue * marginRatio;
   }
+
+  summary.cocktails.forEach(c => {
+    c.revenueShare = totalRevenue > 0 ? (c.estimatedRevenue / totalRevenue) * 100 : 0;
+  });
 
   const overallMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
   const marginColor = overallMargin > 89 ? 'text-orange-500' : overallMargin >= 78 ? 'text-green-600' : 'text-red-600';
@@ -569,8 +575,9 @@ function generateMenu() {
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prix</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Ce que vous gagnez par cocktail après retrait des coûts">Marge</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Les cocktails les plus populaires font le gros de vos revenus. Prix compétitifs recommandés (< 80%)">Popularité</th>
-
-
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              % Revenu
+            </th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
@@ -589,6 +596,9 @@ function generateMenu() {
               </td>
               <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" title="${getPopularityTooltip(cocktail.popularity, cocktail.margin)}">
                 ${'★'.repeat(cocktail.popularity)}${'☆'.repeat(5 - cocktail.popularity)}
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm ${cocktail.revenueShare > 40 ? 'text-green-700' : 'text-gray-700'}">
+                ${cocktail.revenueShare.toFixed(1)}%
               </td>
             </tr>`;
           }).join('')}
@@ -659,12 +669,19 @@ async function exportMenu() {
     if (!selected.length) {
       throw new Error('Veuillez sélectionner au moins un cocktail');
     }
-    
+
+    // --- new analytics fields ---------------------------------
+    const weekEnd  = +document.getElementById('weekend-input').value || 0;
+    const weekDay  = +document.getElementById('weekday-input').value || 0;
+    const grossRev = parseInt(document.getElementById('gross-revenue-input').value, 10) || 0;
+    const monthTotalCocktails = weekEnd * 2 + weekDay * 5;
+    // -----------------------------------------------------------
+
     const code = generateCode();
     
     // Prepare data in the format expected by Google Apps Script
     const menuData = {
-      code: code,
+      code,
       payload: {
         cocktails: selected.map(c => ({
           name: c.name,
@@ -678,6 +695,12 @@ async function exportMenu() {
             unit: i.unit || 'cl'
           }))
         })),
+        meta: {
+          grossRevenue: grossRev,
+          weekdaySales: weekDay,
+          weekendSales: weekEnd,
+          monthlyCocktails: monthTotalCocktails
+        },
         timestamp: new Date().toISOString()
       }
     };
@@ -821,7 +844,8 @@ if (typeof module !== 'undefined') {
     renderCocktailList,
     renderSelected,
     addCustomCocktail,
-    updateCocktailName
+    updateCocktailName,
+    exportMenu
 
   };
 }
