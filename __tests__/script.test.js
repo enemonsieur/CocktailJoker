@@ -15,7 +15,7 @@ describe('Apps Script doPost', () => {
         MimeType: { JSON: 'json', TEXT: 'text' },
         createTextOutput: jest.fn(() => ({
           setMimeType: jest.fn().mockReturnThis(),
-          setHeaders: jest.fn().mockReturnThis()
+          setHeader: jest.fn().mockReturnThis()
         }))
       }
     };
