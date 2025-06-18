@@ -666,21 +666,6 @@ async function exportMenu() {
   exportBtn.innerHTML = '<span class="loading">Enregistrement...</span>';
 
   try {
-<<<<<<< enemonsieur-patch-1
-    if (!selected.length) throw new Error('Veuillez sélectionner au moins un cocktail');
-
-    /* résumé du menu (ventes & coûts) */
-    const resume = selected.reduce((acc, c) => {
-      const cost   = calcTotalCost(c);
-      const revenu = c.price;
-      acc.totalCost    += cost;
-      acc.totalRevenue += revenu;
-      acc.totalProfit  += (revenu - cost);
-      return acc;
-    }, { totalCost: 0, totalRevenue: 0, totalProfit: 0 });
-    resume.overallMargin =
-      resume.totalRevenue > 0 ? (resume.totalProfit / resume.totalRevenue) : 0;
-=======
     if (!selected.length) {
       throw new Error('Veuillez sélectionner au moins un cocktail');
     }
@@ -691,7 +676,6 @@ async function exportMenu() {
     const grossRev = parseInt(document.getElementById('gross-revenue-input').value, 10) || 0;
     const monthTotalCocktails = weekEnd * 2 + weekDay * 5;
     // -----------------------------------------------------------
->>>>>>> mobile
 
     const code = generateCode();
 
@@ -711,16 +695,12 @@ async function exportMenu() {
             unit:   i.unit || 'cl'
           }))
         })),
-<<<<<<< enemonsieur-patch-1
-        meta: resume,                       // ← NEW
-=======
         meta: {
           grossRevenue: grossRev,
           weekdaySales: weekDay,
           weekendSales: weekEnd,
           monthlyCocktails: monthTotalCocktails
         },
->>>>>>> mobile
         timestamp: new Date().toISOString()
       }
     };
@@ -764,6 +744,7 @@ window.exportMenu = exportMenu;
 
 // Reveal app sections when user starts
 function startApp() {
+  console.log("✅ startApp triggered");
   ['cocktail-list', 'sales-estimation', 'scroll-cta']
     .forEach(id => document.getElementById(id)?.classList.remove('hidden'));
   document.getElementById('intro-section')?.classList.add('hidden');
