@@ -656,16 +656,31 @@ function generateMenu() {
 
 }
 
+
 async function exportMenu() {
   console.log("Export button clicked");
-  
-  // Show loading state
-  const exportBtn = document.querySelector('#export-section button');
-  const originalText = exportBtn.textContent;
+
+  const exportBtn   = document.querySelector('#export-section button');
+  const originalTxt = exportBtn.textContent;
   exportBtn.disabled = true;
   exportBtn.innerHTML = '<span class="loading">Enregistrement...</span>';
-  
+
   try {
+<<<<<<< enemonsieur-patch-1
+    if (!selected.length) throw new Error('Veuillez sélectionner au moins un cocktail');
+
+    /* résumé du menu (ventes & coûts) */
+    const resume = selected.reduce((acc, c) => {
+      const cost   = calcTotalCost(c);
+      const revenu = c.price;
+      acc.totalCost    += cost;
+      acc.totalRevenue += revenu;
+      acc.totalProfit  += (revenu - cost);
+      return acc;
+    }, { totalCost: 0, totalRevenue: 0, totalProfit: 0 });
+    resume.overallMargin =
+      resume.totalRevenue > 0 ? (resume.totalProfit / resume.totalRevenue) : 0;
+=======
     if (!selected.length) {
       throw new Error('Veuillez sélectionner au moins un cocktail');
     }
@@ -676,70 +691,60 @@ async function exportMenu() {
     const grossRev = parseInt(document.getElementById('gross-revenue-input').value, 10) || 0;
     const monthTotalCocktails = weekEnd * 2 + weekDay * 5;
     // -----------------------------------------------------------
+>>>>>>> mobile
 
     const code = generateCode();
-    
-    // Prepare data in the format expected by Google Apps Script
+
+    /* payload for Apps Script */
     const menuData = {
       code,
       payload: {
         cocktails: selected.map(c => ({
-          name: c.name,
-          price: c.price,
-          cost: calcTotalCost(c),
-          margin: c.price - calcTotalCost(c),
-          popularity: c.popularity,
+          name:        c.name,
+          price:       c.price,
+          cost:        calcTotalCost(c),
+          margin:      c.price - calcTotalCost(c),
+          popularity:  c.popularity,
           ingredients: c.ingredients.map(i => ({
-            name: i.name,
+            name:   i.name,
             volume: i.volume,
-            unit: i.unit || 'cl'
+            unit:   i.unit || 'cl'
           }))
         })),
+<<<<<<< enemonsieur-patch-1
+        meta: resume,                       // ← NEW
+=======
         meta: {
           grossRevenue: grossRev,
           weekdaySales: weekDay,
           weekendSales: weekEnd,
           monthlyCocktails: monthTotalCocktails
         },
+>>>>>>> mobile
         timestamp: new Date().toISOString()
       }
     };
-    
-    // Send data to Google Sheets
-    try {
-      const response = await fetch(ENDPOINT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain" },   // ← no pre-flight
-        body: JSON.stringify(menuData)               // string is fine
-      });
 
-      
-      // Show success message
-      displayMessage(`Menu sauvegardé avec le code: ${code}`, 'success');
-      
-      // Open WhatsApp after a short delay
-      setTimeout(() => {
-        window.open(`https://wa.me/237694218017?text=Votre%20code%20${code}`, '_blank');
-      }, 1000);
-      
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
-      // Still open WhatsApp even if we can't confirm the save
-      window.open(`https://wa.me/237694218017?text=Votre%20code%20${code}`, '_blank');
-      displayMessage(`Menu partagé avec le code: ${code} (sauvegarde non confirmée)`, 'info');
-    }
-    
-  } catch (error) {
-    console.error('Erreur lors de la préparation du menu:', error);
-    displayMessage(error.message || 'Une erreur est survenue', 'error');
+    /* POST */
+    await fetch(ENDPOINT_URL, {
+      method:  "POST",
+      headers: { "Content-Type": "text/plain" }, // no CORS pre-flight
+      body:    JSON.stringify(menuData)
+    });
+
+    displayMessage(`Menu sauvegardé avec le code: ${code}`, 'success');
+    setTimeout(() => window.open(`https://wa.me/237694218017?text=Votre%20code%20${code}`, '_blank'), 1000);
+
+  } catch (err) {
+    console.error('Erreur export:', err);
+    window.open(`https://wa.me/237694218017?text=Votre%20code%20${generateCode()}`, '_blank');
+    displayMessage(err.message || 'Une erreur est survenue', 'error');
   } finally {
-    // Restore button state
-    if (exportBtn) {
-      exportBtn.disabled = false;
-      exportBtn.textContent = originalText;
-    }
+    exportBtn.disabled = false;
+    exportBtn.textContent = originalTxt;
   }
 }
+
 
 // Update ingredient purchase info (price or buyVolume)
 function updateIngredientPurchase(ingredientName, field, value) {
