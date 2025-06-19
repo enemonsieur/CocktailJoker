@@ -660,29 +660,32 @@ function generateMenu() {
 async function exportMenu () {
   console.log('▶ exportMenu');
 
-  /* UI lock ---------------------------------------------------- */
+  /* Lock UI */
   const btn = document.querySelector('#export-section button');
-  const txt = btn.textContent;
+  const originalTxt = btn.textContent;
   btn.disabled = true;
   btn.innerHTML = '<span class="loading">Enregistrement…</span>';
 
   try {
     if (!selected.length) throw new Error('Sélectionnez au moins 1 cocktail');
 
-    /* a) business inputs -------------------------------------- */
+    /* a) business inputs */
     const weekEnd  = +document.getElementById('weekend-input').value  || 0;
     const weekDay  = +document.getElementById('weekday-input').value  || 0;
     const grossRev = +document.getElementById('gross-revenue-input').value || 0;
     const monthlyCocktails = weekEnd * 2 + weekDay * 5;
 
-    /* b) every cocktail row ----------------------------------- */
+    /* b) cocktail rows (margin now in %) */
     const rows = selected.map(c => {
-      const cost = calcTotalCost(c);
+      const cost  = calcTotalCost(c);
+      const price = +c.price || 0;
+      const marginPct = price ? Math.round(((price - cost) / price) * 100) : 0;
+
       return {
         name       : c.name,
-        price      : +c.price || 0,          // make sure it’s a number
-        cost,
-        margin     : (+c.price || 0) - cost,
+        price      : price,
+        cost       : cost,
+        margin     : marginPct,       // percentage (0-100)
         popularity : +c.popularity || 0,
         ingredients: c.ingredients.map(i => ({
           name  : i.name,
@@ -692,7 +695,7 @@ async function exportMenu () {
       };
     });
 
-    /* c) meta block ------------------------------------------- */
+    /* c) meta block */
     const totals = rows.reduce((m, r) => {
       m.totalRevenue += r.price;
       m.totalCost    += r.cost;
@@ -704,7 +707,7 @@ async function exportMenu () {
                            ? totals.totalProfit / totals.totalRevenue
                            : 0;
 
-    /* d) final payload ---------------------------------------- */
+    /* d) payload */
     const code = generateCode();
     const body = {
       code,
@@ -721,29 +724,36 @@ async function exportMenu () {
       }
     };
 
-    console.log('⬆ sending', body);        // <-- sanity check in DevTools
+    console.log('⬆ sending', body);
 
-    await fetch(ENDPOINT_URL, {
+    /* e) send & check response */
+    const resp = await fetch(ENDPOINT_URL, {
       method : 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body   : JSON.stringify(body)
     });
 
+    if (!resp.ok) {
+      throw new Error(`Erreur serveur (${resp.status})`);
+    }
+
     displayMessage(`Menu sauvegardé ! Code : ${code}`, 'success');
-    setTimeout(() =>
-      window.open(`https://wa.me/237694218017?text=Votre%20code%20${code}`,
-                  '_blank'), 900);
+    setTimeout(() => {
+      window.open(
+        `https://wa.me/237694218017?text=Votre%20code%20${code}`,
+        '_blank'
+      );
+    }, 900);
 
   } catch (err) {
     console.error(err);
     displayMessage(err.message || 'Erreur inconnue', 'error');
   } finally {
-    /* UI unlock ---------------------------------------------- */
-    btn.disabled  = false;
-    btn.textContent = txt;
+    /* Unlock UI */
+    btn.disabled = false;
+    btn.textContent = originalTxt;
   }
 }
-
 
 
 // Update ingredient purchase info (price or buyVolume)
