@@ -836,3 +836,55 @@ if (typeof module !== 'undefined') {
   };
 }
 
+// Quick one-stop test harness for manual verification in the browser console
+// Usage: just call `testLogic()` after the script has loaded
+function testLogic() {
+  const dummyCocktails = [
+    {
+      name: 'Gin Tonic',
+      price: 1200,
+      popularity: 4,
+      ingredients: [
+        { name: 'Gin', volume: 4 },
+        { name: 'Tonic', volume: 10 }
+      ]
+    },
+    {
+      name: 'Mojito',
+      price: 1300,
+      popularity: 5,
+      ingredients: [
+        { name: 'Rhum', volume: 5 },
+        { name: 'Menthe', volume: 2 }
+      ]
+    }
+  ];
+
+  __setSelected(dummyCocktails);
+
+  selected.forEach((c, i) => {
+    const cost = calcTotalCost(c);
+    console.log(`Cocktail ${i} (${c.name}) cost:`, cost);
+  });
+
+  document.body.innerHTML = `
+    <div id="menu-summary"></div>
+    <div id="export-section"><button>Save</button></div>
+  `;
+  generateMenu();
+  console.log(
+    'Menu summary HTML:',
+    document.getElementById('menu-summary').innerHTML
+  );
+
+  const originalFetch = window.fetch;
+  window.fetch = (url, opts) => {
+    console.log('fetch called:', url, opts);
+    return Promise.resolve({ json: () => Promise.resolve({ message: 'ok' }) });
+  };
+  exportMenu().then(() => {
+    console.log('exportMenu completed');
+    window.fetch = originalFetch;
+  });
+}
+
