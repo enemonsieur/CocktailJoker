@@ -657,73 +657,109 @@ function generateMenu() {
 }
 
 
-async function exportMenu() {
-  console.log("Export button clicked");
+async function exportMenu () {
+  console.log('Export button clicked');
 
+  /* --------------------------------------------------------
+     Disable button + spinner so the user can’t double-click
+  ---------------------------------------------------------*/
   const exportBtn   = document.querySelector('#export-section button');
   const originalTxt = exportBtn.textContent;
   exportBtn.disabled = true;
   exportBtn.innerHTML = '<span class="loading">Enregistrement...</span>';
 
   try {
+    /* --------------------------------------------------------
+       Guard: need at least one cocktail selected
+    ---------------------------------------------------------*/
     if (!selected.length) {
       throw new Error('Veuillez sélectionner au moins un cocktail');
     }
 
-    // --- new analytics fields ---------------------------------
-    const weekEnd  = +document.getElementById('weekend-input').value || 0;
-    const weekDay  = +document.getElementById('weekday-input').value || 0;
-    const grossRev = parseInt(document.getElementById('gross-revenue-input').value, 10) || 0;
+    /* --------------------------------------------------------
+       Read the extra “business inputs” (can be 0)
+    ---------------------------------------------------------*/
+    const weekEnd  = +document.getElementById('weekend-input').value  || 0;
+    const weekDay  = +document.getElementById('weekday-input').value  || 0;
+    const grossRev = +document.getElementById('gross-revenue-input').value || 0;
     const monthTotalCocktails = weekEnd * 2 + weekDay * 5;
-    // -----------------------------------------------------------
 
+    /* --------------------------------------------------------
+       Re-compute cost / profit aggregates
+    ---------------------------------------------------------*/
+    const totals = selected.reduce((acc, c) => {
+      const cost   = calcTotalCost(c);
+      const profit = c.price - cost;
+      acc.totalCost    += cost;
+      acc.totalRevenue += c.price;
+      acc.totalProfit  += profit;
+      return acc;
+    }, { totalCost: 0, totalRevenue: 0, totalProfit: 0 });
+
+    totals.overallMargin =
+      totals.totalRevenue ? totals.totalProfit / totals.totalRevenue : 0;
+
+    /* --------------------------------------------------------
+       Assemble the payload exactly the way Apps Script expects
+    ---------------------------------------------------------*/
     const code = generateCode();
 
-    /* payload for Apps Script */
     const menuData = {
       code,
       payload: {
         cocktails: selected.map(c => ({
-          name:        c.name,
-          price:       c.price,
-          cost:        calcTotalCost(c),
-          margin:      c.price - calcTotalCost(c),
-          popularity:  c.popularity,
+          name:  c.name,
+          price: c.price,
+          cost:  calcTotalCost(c),
+          margin: c.price - calcTotalCost(c),
+          popularity: c.popularity,
           ingredients: c.ingredients.map(i => ({
-            name:   i.name,
+            name: i.name,
             volume: i.volume,
-            unit:   i.unit || 'cl'
+            unit: i.unit || 'cl'
           }))
         })),
         meta: {
-          totalRevenue:    resume.totalRevenue,
-          totalCost:       resume.totalCost,
-          totalProfit:     resume.totalProfit,
-          overallMargin:   resume.overallMargin,
-          grossRevenue:    grossRev,
-          weekdaySales:    weekDay,
-          weekendSales:    weekEnd,
+          totalRevenue:     totals.totalRevenue,
+          totalCost:        totals.totalCost,
+          totalProfit:      totals.totalProfit,
+          overallMargin:    totals.overallMargin,
+          grossRevenue:     grossRev,
+          weekdaySales:     weekDay,
+          weekendSales:     weekEnd,
           monthlyCocktails: monthTotalCocktails
         },
         timestamp: new Date().toISOString()
       }
     };
 
-    /* POST */
+    /* --------------------------------------------------------
+       POST to the Apps-Script Web App (no CORS pre-flight)
+    ---------------------------------------------------------*/
     await fetch(ENDPOINT_URL, {
-      method:  "POST",
-      headers: { "Content-Type": "text/plain" }, // no CORS pre-flight
-      body:    JSON.stringify(menuData)
+      method : 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body   : JSON.stringify(menuData)
     });
 
-    displayMessage(`Menu sauvegardé avec le code: ${code}`, 'success');
-    setTimeout(() => window.open(`https://wa.me/237694218017?text=Votre%20code%20${code}`, '_blank'), 1000);
+    /* --------------------------------------------------------
+       Success feedback + WhatsApp redirect
+    ---------------------------------------------------------*/
+    displayMessage(`Menu sauvegardé avec le code : ${code}`, 'success');
+    setTimeout(() => {
+      window.open(
+        `https://wa.me/237694218017?text=Votre%20code%20${code}`,
+        '_blank'
+      );
+    }, 1000);
 
   } catch (err) {
-    console.error('Erreur export:', err);
-    window.open(`https://wa.me/237694218017?text=Votre%20code%20${generateCode()}`, '_blank');
+    console.error('Erreur export :', err);
     displayMessage(err.message || 'Une erreur est survenue', 'error');
   } finally {
+    /* --------------------------------------------------------
+       Re-enable button whatever happened
+    ---------------------------------------------------------*/
     exportBtn.disabled = false;
     exportBtn.textContent = originalTxt;
   }
