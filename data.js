@@ -1040,3 +1040,8 @@ const cocktails = [
   }
 ];
 
+// Export data for testing when running in Node
+if (typeof module !== 'undefined') {
+  module.exports = { masterIngredients, cocktails };
+}
+
