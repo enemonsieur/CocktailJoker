@@ -1,5 +1,7 @@
 // logic.js
-const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbw7yxJ0Ij4mTXuGPQo6B-EtiiUOkRPsR7Fy8XNM9C7JVHxeWtowCCQfJ4JUYXh0sTPJ/exec";
+// API endpoint for Apps-Script Web App
+const ENDPOINT_URL =
+  "https://script.google.com/macros/s/AKfycbxysnEAej5cKRdP8Xq93gbw81Ddrg4boJVBbhx2YR9fijlwa6IckMnmPfd6AwtPMZGyrw/exec";
 let selected = []; // Holds the user's chosen cocktails
 let showAllCocktails = false; // Tracks if we should show all cocktails or just popular ones
 
@@ -656,11 +658,10 @@ function generateMenu() {
 
 }
 
-
 async function exportMenu () {
   console.log('▶ exportMenu');
 
-  /* Lock UI */
+  /* UI lock ---------------------------------------------------- */
   const btn = document.querySelector('#export-section button');
   const originalTxt = btn.textContent;
   btn.disabled = true;
@@ -669,23 +670,23 @@ async function exportMenu () {
   try {
     if (!selected.length) throw new Error('Sélectionnez au moins 1 cocktail');
 
-    /* a) business inputs */
+    /* a) business inputs -------------------------------------- */
     const weekEnd  = +document.getElementById('weekend-input').value  || 0;
     const weekDay  = +document.getElementById('weekday-input').value  || 0;
     const grossRev = +document.getElementById('gross-revenue-input').value || 0;
     const monthlyCocktails = weekEnd * 2 + weekDay * 5;
 
-    /* b) cocktail rows (margin now in %) */
+    /* b) cocktail rows (margin in %) --------------------------- */
     const rows = selected.map(c => {
-      const cost  = calcTotalCost(c);
-      const price = +c.price || 0;
-      const marginPct = price ? Math.round(((price - cost) / price) * 100) : 0;
+      const cost   = calcTotalCost(c);
+      const price  = +c.price || 0;
+      const margin = price ? Math.round(((price - cost) / price) * 100) : 0;
 
       return {
-        name       : c.name,
-        price      : price,
-        cost       : cost,
-        margin     : marginPct,       // percentage (0-100)
+        name  : c.name,
+        price : price,
+        cost  : cost,
+        margin: margin,
         popularity : +c.popularity || 0,
         ingredients: c.ingredients.map(i => ({
           name  : i.name,
@@ -695,7 +696,7 @@ async function exportMenu () {
       };
     });
 
-    /* c) meta block */
+    /* c) meta -------------------------------------------------- */
     const totals = rows.reduce((m, r) => {
       m.totalRevenue += r.price;
       m.totalCost    += r.cost;
@@ -707,7 +708,7 @@ async function exportMenu () {
                            ? totals.totalProfit / totals.totalRevenue
                            : 0;
 
-    /* d) payload */
+    /* d) payload ---------------------------------------------- */
     const code = generateCode();
     const body = {
       code,
@@ -715,9 +716,9 @@ async function exportMenu () {
         cocktails: rows,
         meta: {
           ...totals,
-          grossRevenue     : grossRev,
-          weekdaySales     : weekDay,
-          weekendSales     : weekEnd,
+          grossRevenue : grossRev,
+          weekdaySales : weekDay,
+          weekendSales : weekEnd,
           monthlyCocktails
         },
         timestamp: new Date().toISOString()
@@ -726,30 +727,25 @@ async function exportMenu () {
 
     console.log('⬆ sending', body);
 
-    /* e) send & check response */
+    /* e) send + check ----------------------------------------- */
     const resp = await fetch(ENDPOINT_URL, {
       method : 'POST',
-      headers: { 'Content-Type': 'text/plain' },
+      headers: { 'Content-Type': 'text/plain' },   // simple CORS
       body   : JSON.stringify(body)
     });
 
-    if (!resp.ok) {
-      throw new Error(`Erreur serveur (${resp.status})`);
-    }
+    if (!resp.ok) throw new Error(`Erreur serveur (${resp.status})`);
 
     displayMessage(`Menu sauvegardé ! Code : ${code}`, 'success');
     setTimeout(() => {
-      window.open(
-        `https://wa.me/237694218017?text=Votre%20code%20${code}`,
-        '_blank'
-      );
+      window.open(`https://wa.me/237694218017?text=Votre%20code%20${code}`, '_blank');
     }, 900);
 
   } catch (err) {
     console.error(err);
     displayMessage(err.message || 'Erreur inconnue', 'error');
   } finally {
-    /* Unlock UI */
+    /* UI unlock ----------------------------------------------- */
     btn.disabled = false;
     btn.textContent = originalTxt;
   }
@@ -914,4 +910,3 @@ function testLogic() {
     window.fetch = originalFetch;
   });
 }
-
