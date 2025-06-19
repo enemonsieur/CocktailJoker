@@ -756,17 +756,14 @@ async function exportMenu () {
 }
 
 
-// Update ingredient purchase info (price or buyVolume)
-function updateIngredientPurchase(ingredientName, field, value) {
-  if (masterIngredients[ingredientName]) {
-    masterIngredients[ingredientName][field] = parseFloat(value) || 0;
-    renderSelected();
-  }
-}
 
 // Generate a random code for menu identification
 function generateCode() {
-  return Math.random().toString(36).substr(2, 6).toUpperCase();
+  // yymmdd-XXXX  (e.g. 250619-AB3F)
+  const d = new Date();
+  const stamp  = d.toISOString().slice(2,10).replace(/-/g,''); // 250619
+  const random = Math.random().toString(36).substr(2, 4).toUpperCase();
+  return `${stamp}-${random}`;
 }
 
 // Make exportMenu available globally
