@@ -696,9 +696,13 @@ async function exportMenu() {
           }))
         })),
         meta: {
-          grossRevenue: grossRev,
-          weekdaySales: weekDay,
-          weekendSales: weekEnd,
+          totalRevenue:    resume.totalRevenue,
+          totalCost:       resume.totalCost,
+          totalProfit:     resume.totalProfit,
+          overallMargin:   resume.overallMargin,
+          grossRevenue:    grossRev,
+          weekdaySales:    weekDay,
+          weekendSales:    weekEnd,
           monthlyCocktails: monthTotalCocktails
         },
         timestamp: new Date().toISOString()
