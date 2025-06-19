@@ -658,112 +658,92 @@ function generateMenu() {
 
 
 async function exportMenu () {
-  console.log('Export button clicked');
+  console.log('▶ exportMenu');
 
-  /* --------------------------------------------------------
-     Disable button + spinner so the user can’t double-click
-  ---------------------------------------------------------*/
-  const exportBtn   = document.querySelector('#export-section button');
-  const originalTxt = exportBtn.textContent;
-  exportBtn.disabled = true;
-  exportBtn.innerHTML = '<span class="loading">Enregistrement...</span>';
+  /* UI lock ---------------------------------------------------- */
+  const btn = document.querySelector('#export-section button');
+  const txt = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading">Enregistrement…</span>';
 
   try {
-    /* --------------------------------------------------------
-       Guard: need at least one cocktail selected
-    ---------------------------------------------------------*/
-    if (!selected.length) {
-      throw new Error('Veuillez sélectionner au moins un cocktail');
-    }
+    if (!selected.length) throw new Error('Sélectionnez au moins 1 cocktail');
 
-    /* --------------------------------------------------------
-       Read the extra “business inputs” (can be 0)
-    ---------------------------------------------------------*/
+    /* a) business inputs -------------------------------------- */
     const weekEnd  = +document.getElementById('weekend-input').value  || 0;
     const weekDay  = +document.getElementById('weekday-input').value  || 0;
     const grossRev = +document.getElementById('gross-revenue-input').value || 0;
-    const monthTotalCocktails = weekEnd * 2 + weekDay * 5;
+    const monthlyCocktails = weekEnd * 2 + weekDay * 5;
 
-    /* --------------------------------------------------------
-       Re-compute cost / profit aggregates
-    ---------------------------------------------------------*/
-    const totals = selected.reduce((acc, c) => {
-      const cost   = calcTotalCost(c);
-      const profit = c.price - cost;
-      acc.totalCost    += cost;
-      acc.totalRevenue += c.price;
-      acc.totalProfit  += profit;
-      return acc;
-    }, { totalCost: 0, totalRevenue: 0, totalProfit: 0 });
+    /* b) every cocktail row ----------------------------------- */
+    const rows = selected.map(c => {
+      const cost = calcTotalCost(c);
+      return {
+        name       : c.name,
+        price      : +c.price || 0,          // make sure it’s a number
+        cost,
+        margin     : (+c.price || 0) - cost,
+        popularity : +c.popularity || 0,
+        ingredients: c.ingredients.map(i => ({
+          name  : i.name,
+          volume: +i.volume || 0,
+          unit  : i.unit || 'cl'
+        }))
+      };
+    });
 
-    totals.overallMargin =
-      totals.totalRevenue ? totals.totalProfit / totals.totalRevenue : 0;
+    /* c) meta block ------------------------------------------- */
+    const totals = rows.reduce((m, r) => {
+      m.totalRevenue += r.price;
+      m.totalCost    += r.cost;
+      return m;
+    }, { totalRevenue: 0, totalCost: 0 });
 
-    /* --------------------------------------------------------
-       Assemble the payload exactly the way Apps Script expects
-    ---------------------------------------------------------*/
+    totals.totalProfit   = totals.totalRevenue - totals.totalCost;
+    totals.overallMargin = totals.totalRevenue
+                           ? totals.totalProfit / totals.totalRevenue
+                           : 0;
+
+    /* d) final payload ---------------------------------------- */
     const code = generateCode();
-
-    const menuData = {
+    const body = {
       code,
       payload: {
-        cocktails: selected.map(c => ({
-          name:  c.name,
-          price: c.price,
-          cost:  calcTotalCost(c),
-          margin: c.price - calcTotalCost(c),
-          popularity: c.popularity,
-          ingredients: c.ingredients.map(i => ({
-            name: i.name,
-            volume: i.volume,
-            unit: i.unit || 'cl'
-          }))
-        })),
+        cocktails: rows,
         meta: {
-          totalRevenue:     totals.totalRevenue,
-          totalCost:        totals.totalCost,
-          totalProfit:      totals.totalProfit,
-          overallMargin:    totals.overallMargin,
-          grossRevenue:     grossRev,
-          weekdaySales:     weekDay,
-          weekendSales:     weekEnd,
-          monthlyCocktails: monthTotalCocktails
+          ...totals,
+          grossRevenue     : grossRev,
+          weekdaySales     : weekDay,
+          weekendSales     : weekEnd,
+          monthlyCocktails
         },
         timestamp: new Date().toISOString()
       }
     };
 
-    /* --------------------------------------------------------
-       POST to the Apps-Script Web App (no CORS pre-flight)
-    ---------------------------------------------------------*/
+    console.log('⬆ sending', body);        // <-- sanity check in DevTools
+
     await fetch(ENDPOINT_URL, {
       method : 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body   : JSON.stringify(menuData)
+      body   : JSON.stringify(body)
     });
 
-    /* --------------------------------------------------------
-       Success feedback + WhatsApp redirect
-    ---------------------------------------------------------*/
-    displayMessage(`Menu sauvegardé avec le code : ${code}`, 'success');
-    setTimeout(() => {
-      window.open(
-        `https://wa.me/237694218017?text=Votre%20code%20${code}`,
-        '_blank'
-      );
-    }, 1000);
+    displayMessage(`Menu sauvegardé ! Code : ${code}`, 'success');
+    setTimeout(() =>
+      window.open(`https://wa.me/237694218017?text=Votre%20code%20${code}`,
+                  '_blank'), 900);
 
   } catch (err) {
-    console.error('Erreur export :', err);
-    displayMessage(err.message || 'Une erreur est survenue', 'error');
+    console.error(err);
+    displayMessage(err.message || 'Erreur inconnue', 'error');
   } finally {
-    /* --------------------------------------------------------
-       Re-enable button whatever happened
-    ---------------------------------------------------------*/
-    exportBtn.disabled = false;
-    exportBtn.textContent = originalTxt;
+    /* UI unlock ---------------------------------------------- */
+    btn.disabled  = false;
+    btn.textContent = txt;
   }
 }
+
 
 
 // Update ingredient purchase info (price or buyVolume)
