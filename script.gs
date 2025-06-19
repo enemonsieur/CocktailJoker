@@ -1,57 +1,88 @@
+// code.gs
 const SPREADSHEET_ID = '1j7IYkIvlaTi3m9SctiKk-ND4--_Aq4cFXOGX50Kauj0';
 
 function doPost(e) {
+  const cors = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type'
+  };
+
+  // 1) Parse incoming JSON
   const data = JSON.parse(e.postData.contents);
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const sheet = ss.getSheets()[0];
+  const ss   = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const name = data.code
+    || 'Menu ' + Utilities.formatDate(new Date(), 'GMT+1', 'dd/MM/yyyy');
+  let sheet = ss.getSheetByName(name) || ss.insertSheet(name);
 
-  const cocktails = data.payload.cocktails;
-  const meta = data.payload.meta || {};
-
-  if (sheet.getLastRow() === 1) {
-    sheet.appendRow([
-      'Résumé',
-      meta.grossRevenue || '',
-      meta.weekdaySales || '',
-      meta.weekendSales || '',
-      meta.monthlyCocktails || '',
-      '',
-      new Date()
-    ]);
+  // 2) SUMMARY SECTION (rows 1–3)
+  if (sheet.getLastRow() === 0) {
+    // Row 1: Title
+    sheet.getRange(1, 1).setValue('Résumé');
+    // Row 2: Headers
+    sheet.getRange(2, 1, 1, 6).setValues([[
+      'Revenus mensuels',
+      'Coûts totaux',
+      'Profits',
+      'Marge %',
+      'Ventes / mois',
+      'Timestamp'
+    ]]);
   }
+  // Always overwrite Row 3 with the latest meta
+  const meta = data.payload.meta || {};
+  sheet.getRange(3, 1, 1, 6).setValues([[
+    meta.totalRevenue      || '',
+    meta.totalCost         || '',
+    meta.totalProfit       || '',
+    typeof meta.overallMargin === 'number'
+      ? Math.round(meta.overallMargin * 100) / 100 : '',
+    meta.monthlyCocktails  || '',
+    new Date()
+  ]]);
 
-  cocktails.forEach(c => {
-    sheet.appendRow([
+  // 3) COCKTAIL TABLE HEADER (row 6)
+  sheet.getRange(6, 1, 1, 6).setValues([[
+    'Nom',
+    'Prix',
+    'Coût',
+    'Marge',
+    'Popularité',
+    'Timestamp'
+  ]]);
+
+  // 4) COCKTAIL ROWS (starting row 7)
+  const cocktails = data.payload.cocktails || [];
+  cocktails.forEach((c, i) => {
+    sheet.getRange(7 + i, 1, 1, 6).setValues([[
       c.name,
       c.price,
       c.cost,
       c.margin,
       c.popularity,
-      '',
       new Date()
-    ]);
+    ]]);
   });
 
-  return ContentService
+  // 5) Return OK with CORS headers
+  const out = ContentService
     .createTextOutput(JSON.stringify({ message: 'ok' }))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeader('Access-Control-Allow-Origin', '*')
-    .setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    .setMimeType(ContentService.MimeType.JSON);
+  return out;
 }
 
-function doOptions(e) {
-  return ContentService
+function doOptions() {
+  const out = ContentService
     .createTextOutput('')
-    .setMimeType(ContentService.MimeType.TEXT)
-    .setHeader('Access-Control-Allow-Origin', '*')
-    .setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    .setMimeType(ContentService.MimeType.TEXT);
+  out.setHeader('Access-Control-Allow-Origin', '*');
+  out.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  out.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  return out;
 }
 
 function doGet() {
   return ContentService
-    .createTextOutput('✅ Web App is running. Use POST to submit menu data.')
+    .createTextOutput('✅ Web App running — use POST.')
     .setMimeType(ContentService.MimeType.TEXT);
-
 }
