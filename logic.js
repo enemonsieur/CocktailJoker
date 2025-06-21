@@ -1,7 +1,8 @@
 // logic.js
 // API endpoint for Apps-Script Web App
-const ENDPOINT_URL =
-  "https://script.google.com/macros/s/AKfycbxysnEAej5cKRdP8Xq93gbw81Ddrg4boJVBbhx2YR9fijlwa6IckMnmPfd6AwtPMZGyrw/exec";
+const ENDPOINT_URL = import.meta?.env?.DEV
+  ? "https://script.google.com/macros/s/AKfycbxysnEAej5cKRdP8Xq93gbw81Ddrg4boJVBbhx2YR9fijlwa6IckMnmPfd6AwtPMZGyrw/dev"
+  : "https://script.google.com/macros/s/AKfycbxysnEAej5cKRdP8Xq93gbw81Ddrg4boJVBbhx2YR9fijlwa6IckMnmPfd6AwtPMZGyrw/exec";
 let selected = []; // Holds the user's chosen cocktails
 let showAllCocktails = false; // Tracks if we should show all cocktails or just popular ones
 
@@ -305,10 +306,10 @@ function updateIngredientUnitServed(cocktailIndex, ingredientIndex, newUnit) {
   }
 
   // 3) Force buyUnit to match exactly:
-  //    - if newUnit === "cl", then buyUnit must be "liter"
+  //    - if newUnit === "cl", then buyUnit must be "liter" (cl converts to liter)
   //    - if newUnit === "g",   then buyUnit must be "g"
   //    - if newUnit === "piece", buyUnit must be "piece"
-  if (newUnit === 'cl')       masterIngredients[name].buyUnit = 'liter';
+  if (newUnit === 'cl')       masterIngredients[name].buyUnit = 'liter'; // cl converts to liter
   else if (newUnit === 'g')   masterIngredients[name].buyUnit = 'g';
   else if (newUnit === 'piece') masterIngredients[name].buyUnit = 'piece';
 
@@ -689,13 +690,12 @@ async function exportMenu () {
         margin: margin,
         popularity : +c.popularity || 0,
         ingredients: c.ingredients.map(i => ({
-          name  : i.name,
-          volume: +i.volume || 0,
-          unit  : i.unit || 'cl'
+          name: i.name,
+          volume: i.volume,
+          unit: masterIngredients[i.name]?.unitServed || 'cl',
+          price: masterIngredients[i.name]?.price || 0
         }))
-      };
-    });
-
+  };
     /* c) meta -------------------------------------------------- */
     const totals = rows.reduce((m, r) => {
       m.totalRevenue += r.price;
@@ -730,7 +730,7 @@ async function exportMenu () {
     /* e) send + check ----------------------------------------- */
     const resp = await fetch(ENDPOINT_URL, {
       method : 'POST',
-      headers: { 'Content-Type': 'text/plain' },   // simple CORS
+      headers: { 'Content-Type': 'application/json' },
       body   : JSON.stringify(body)
     });
 
@@ -831,7 +831,7 @@ async function sendTestCocktail() {
   try {
     const response = await fetch(ENDPOINT_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(testPayload)
     });
 
