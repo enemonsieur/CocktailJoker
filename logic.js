@@ -142,18 +142,18 @@ function renderSelected() {
 
         <div class="mb-3 overflow-x-auto">
           <!-- Enable horizontal scrolling on small screens -->
-          <div class="grid grid-cols-11 gap-2 mb-1 text-xs text-gray-500">
+          <div class="min-w-[640px] grid grid-cols-11 gap-2 mb-1 text-xs text-gray-500">
             <div class="col-span-1"></div>
             <div class="col-span-4">Ingrédient</div>
             <div class="col-span-2">Volume <span class="ml-1 cursor-help" title="Volume utilisé par cocktail">🛈</span></div>
             <div class="col-span-4">Prix d'achat <span class="ml-1 cursor-help" title="Coût d’achat de l’ingrédient et sa quantité à l’achat">🛈</span></div>
           </div>
 
-        <div id="ingredients-${i}" class="space-y-2">
+        <div id="ingredients-${i}" class="space-y-2 overflow-x-auto">
           ${c.ingredients.map((ing, idx) => {
             const ingInfo = masterIngredients[ing.name] || { unitServed: 'cl', buyVolume: 1, buyUnit: 'liter', price: 0 };
             return `
-              <div class="grid grid-cols-11 gap-2 items-center">
+              <div class="min-w-[640px] grid grid-cols-11 gap-2 items-center">
                 <button onclick="removeIngredient(${i}, ${idx})" class="text-red-500 col-span-1" title="Supprimer cet ingrédient">×</button>
 
 
