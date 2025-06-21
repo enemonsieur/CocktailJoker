@@ -695,7 +695,8 @@ async function exportMenu () {
           unit: masterIngredients[i.name]?.unitServed || 'cl',
           price: masterIngredients[i.name]?.price || 0
         }))
-  };
+      };
+    });
     /* c) meta -------------------------------------------------- */
     const totals = rows.reduce((m, r) => {
       m.totalRevenue += r.price;
