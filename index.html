@@ -4,32 +4,154 @@
 <head>
   <meta charset="UTF-8">
   <title>Optimisateur de Marges de Cocktails</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    button,[onclick]{cursor:pointer;}
+    @keyframes pulse-slow{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+    .animate-pulse-slow{animation:pulse-slow 3s infinite;}
+    
+    /* WhatsApp floating button */
+    .whatsapp-float {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #25D366;
+      color: white;
+      border-radius: 50px;
+      padding: 8px 16px;
+      font-size: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    .whatsapp-float:hover {
+      background-color: #128C7E;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .whatsapp-float i {
+      font-size: 20px;
+    }
+    @media (max-width: 480px) {
+      .whatsapp-float {
+        font-size: 0;
+        padding: 10px;
+      }
+      .whatsapp-float i {
+        font-size: 24px;
+      }
+    }
+  </style>
 </head>
 
-<body class="bg-gray-100 text-gray-800 p-4 md:p-8">
+<body class="bg-gray-100 text-gray-800">
+
+  <div class="max-w-screen-lg mx-auto px-4 py-4 md:py-8">
+
+  <!-- Intro section for first-time visitors -->
+  <div id="intro-section" class="bg-white rounded-xl shadow-md p-8 max-w-2xl mx-auto mt-10 text-center">
+    <h1 class="text-3xl sm:text-4xl leading-snug tracking-tight max-w-2xl mx-auto font-bold text-gray-900 mb-2">
+      Votre Bar ne rapporte pas autant qu’il devrait ?
+    </h1>
+    <p class="mb-6 max-w-xl mx-auto text-lg sm:text-xl leading-relaxed text-gray-700">
+      Si vous êtes gérant d'un BAR, HÔTEL, RESTAURANT, CAFÉ, etc...
+      Vous connaissez le stress de s'assurer que le Bar rapporte de l'argent chaque mois,
+      malgré les changements de produits, de barmen, et de clients...
+    </p>
+    <p class="text-gray-600 mb-6 text-base sm:text-lg lg:text-xl">
+      Avec <span class="font-semibold">notre Calculateur de Marges</span>, vous saurez en moins de 5 min
+      combien vous <span class="text-green-600 font-semibold">gagnez</span> (ou <span class="text-red-500 font-semibold">perdez</span>)
+      sur chaque cocktail, et dans <strong>tout le bar !</strong>
+    </p>
+    <div class="bg-blue-50 rounded-lg px-6 py-4 shadow-md mb-6">
+      <div class="grid sm:grid-cols-3 gap-6 items-start text-left text-sm text-gray-800 leading-tight">
+        <div>🔍 <strong>65+ Ingrédients</strong><br><span class="text-xs text-gray-600">Prix réels à Douala, Yaoundé</span></div>
+        <div>🍸 <strong>25 Cocktails</strong><br><span class="text-xs text-gray-600">Les plus populaires au Cameroun</span></div>
+        <div>🧠 <strong>Mixologues</strong><br><span class="text-xs text-gray-600">Expertise locale pour estimer vos marges</span></div>
+      </div>
+    </div>
+    <p class="text-gray-800 mb-6 text-base sm:text-lg lg:text-xl">
+      🧠 Vous saurez en un clic quels cocktails ne sont pas <strong>rentables</strong>,
+      et comment les améliorer !
+    </p>
+    <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-11/12 sm:static sm:translate-x-0">
+      <button id="start-btn" onclick="startApp()" class="bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg text-xl py-4 px-8 shadow-lg hover:scale-105 transition-transform duration-200 animate-pulse-slow">
+        <span class="flex items-center justify-center gap-2">Commencer gratuitement <span aria-hidden="true">➔</span></span>
+      </button>
+    </div>
+    <p class="mt-2 text-gray-400 text-xs text-center">Aucune inscription nécessaire</p>
+  </div>
+    <button id="scroll-cta" onclick="startApp()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded shadow hidden">Commencer gratuitement</button>
+
+  <div class="text-center mt-6 animate-bounce text-gray-400 text-xl sm:mt-10">
+    ↓
+  </div>
 
   <!-- Cocktail list buttons will mount here -->
-  <div id="cocktail-list" class="container mx-auto max-w-4xl mb-8"></div>
+  <div id="cocktail-list" class="hidden mb-8" title="Cliquez pour ajouter un cocktail que vous servez dans votre bar"></div>
 
   <!-- Selected cocktails & cost analysis will mount here -->
-  <div id="selected-cocktails" class="container mx-auto max-w-4xl mb-8"></div>
+  <div id="selected-cocktails" class="hidden mb-8" ></div>
+
+  <!-- Inputs for sales estimation -->
+  <div id="sales-estimation" class="hidden mb-6 border-b border-gray-300 pb-4 grid grid-cols-2 gap-4" >
+    <p class="text-sm font-semibold col-span-2">Estimez vos ventes pour mieux calculer vos marges</p>
+    <p class="text-xs text-gray-600 mb-2 col-span-2">Pour mieux estimer vos marges, entrez le nombre de cocktails que votre bar vend en :</p>
+    <div class="col-span-2">
+      <p class="text-sm font-medium mb-1">Revenus mensuels bruts
+        <span class="ml-1 text-gray-400 cursor-help" title="Si vous connaissez vos revenus mensuels totaux, entrez-les ici pour un meilleur calcul de marge">🛈</span>
+      </p>
+      <select id="gross-revenue-input" class="w-full p-2 border rounded">
+        <option value=""></option>
+        <option value="500000">500K</option>
+        <option value="750000">750K</option>
+        <option value="1000000">1M</option>
+        <option value="1500000">1.5M</option>
+        <option value="2000000">2M</option>
+        <option value="2500000">2.5M</option>
+        <option value="3000000">3M</option>
+        <option value="4000000">4M</option>
+        <option value="5000000">5M+</option>
+      </select>
+    </div>
+    <div>
+      <p class="text-sm font-medium mb-1">Semaine
+        <span class="ml-1 text-gray-400 cursor-help" title="Période de faible activité (ex: lundi à jeudi)">🛈</span>
+      </p>
+      <input id="weekday-input" type="number" required class="w-full p-2 border rounded">
+    </div>
+    <div>
+      <p class="text-sm font-medium mb-1">Week-End
+        <span class="ml-1 text-gray-400 cursor-help" title="Période de forte activité (ex: vendredi à dimanche)">🛈</span>
+      </p>
+      <input id="weekend-input" type="number" required class="w-full p-2 border rounded">
+
+    </div>
+  </div>
 
   <!-- Generate summary button -->
   <div class="text-center my-8">
     <button onclick="generateMenu()"
-      class="bg-indigo-600 text-white font-bold px-6 py-3 rounded-lg shadow-md hover:bg-indigo-700">
+      class="w-full sm:w-auto bg-indigo-600 text-white font-bold px-6 py-3 rounded-lg shadow-md hover:bg-indigo-700">
       Générer le Résumé du Menu
     </button>
   </div>
 
+
   <!-- Summary table will mount here -->
-  <div id="menu-summary" class="container mx-auto max-w-4xl"></div>
+  <div id="menu-summary" class="hidden" ></div>
 
   <!-- Export (save & WhatsApp) button -->
-  <div id="export-section" class="text-center mb-8 mt-4">
-    <button onclick="exportMenu()" class="bg-green-500 hover:bg-green-600 text-white font-bold px-6 py-3 rounded-lg transition-colors duration-200">
+  <div id="export-section" class="hidden text-center mb-8 mt-4" >
+
+    <!-- Full-width button on mobile -->
+    <button onclick="exportMenu()" class="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-bold px-6 py-3 rounded-lg transition-colors duration-200">
       Sauvegarder Votre Menu et Marges
     </button>
   </div>
@@ -38,6 +160,16 @@
   <script src="data.js"></script>
   <script src="logic.js"></script>
 
+  </div> <!-- /wrapper -->
+
+  <!-- WhatsApp Floating Button -->
+  <a href="https://wa.me/237694218017?text=Bonjour%2C%20j'ai%20une%20question%20à%20propos%20de%20l'optimisateur%20de%20marges" 
+     class="whatsapp-float" 
+     target="_blank" 
+     rel="noopener noreferrer">
+    <i class="fab fa-whatsapp"></i>
+    <span>Besoin d'aide ?</span>
+  </a>
 </body>
 
 </html>
