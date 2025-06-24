@@ -735,10 +735,7 @@ async function exportMenu () {
 
     if (!resp.ok) throw new Error(`Erreur serveur (${resp.status})`);
 
-    displayMessage(`Menu sauvegardé ! Code : ${code}`, 'success');
-    setTimeout(() => {
-      window.open(`https://wa.me/237694218017?text=Votre%20code%20${code}`, '_blank');
-    }, 900);
+    displayMessage(`Menu sauvegardé ! Code : ${code}`, 'success', `https://wa.me/237694218017?text=Votre%20code%20${code}`);
 
   } catch (err) {
     console.error(err);
@@ -787,23 +784,41 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Helper function to display messages
-function displayMessage(message, type = 'info') {
+function displayMessage(message, type = 'info', whatsappLink = null) {
   const messageBox = document.createElement('div');
-  messageBox.className = `message-box bg-${type === 'error' ? 'red' : 'blue'}-100 border-l-4 border-${type === 'error' ? 'red' : 'blue'}-500 text-${type === 'error' ? 'red' : 'blue'}-700 p-4`;
+  messageBox.className = `fixed top-4 right-4 z-50 bg-${type === 'error' ? 'red' : 'blue'}-100 border-l-4 border-${type === 'error' ? 'red' : 'blue'}-500 text-${type === 'error' ? 'red' : 'blue'}-700 p-4 rounded shadow-lg`;
   messageBox.role = 'alert';
   
   const p = document.createElement('p');
+  p.className = 'mb-2';
   p.textContent = message;
   messageBox.appendChild(p);
   
+  // Add WhatsApp button if link is provided
+  if (whatsappLink) {
+    const whatsappBtn = document.createElement('a');
+    whatsappBtn.href = whatsappLink;
+    whatsappBtn.target = '_blank';
+    whatsappBtn.className = 'inline-flex items-center bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm';
+    whatsappBtn.innerHTML = '<i class="fab fa-whatsapp mr-1"></i> Ouvrir WhatsApp';
+    messageBox.appendChild(whatsappBtn);
+  }
+  
   document.body.appendChild(messageBox);
   
-  // Remove the message after 5 seconds
+  // Remove the message after 10 seconds
   setTimeout(() => {
-    messageBox.remove();
-  }, 5000);
-
-
+    messageBox.style.opacity = '0';
+    messageBox.style.transition = 'opacity 0.5s ease';
+    setTimeout(() => messageBox.remove(), 500);
+  }, 10000);
+  
+  // Add close button
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'absolute top-1 right-2 text-gray-500 hover:text-gray-700';
+  closeBtn.innerHTML = '&times;';
+  closeBtn.onclick = () => messageBox.remove();
+  messageBox.appendChild(closeBtn);
 }
 
 async function sendTestCocktail() {
