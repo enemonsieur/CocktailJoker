@@ -1,6 +1,6 @@
 // logic.js
 // API endpoint for Apps-Script Web App
-const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbxysnEAej5cKRdP8Xq93gbw81Ddrg4boJVBbhx2YR9fijlwa6IckMnmPfd6AwtPMZGyrw/exec";
+const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbyEX1z0_LiuRvNc8v9s0SbA92fP7UELFv-ykseGj5wm0dR8N59YNL2gQs9lm9wnjsbdqw/exec";
 let selected = []; // Holds the user's chosen cocktails
 let showAllCocktails = false; // Tracks if we should show all cocktails or just popular ones
 
