@@ -726,12 +726,6 @@ async function exportMenu () {
 
     console.log('⬆ sending', body);
 
-    /* e) send + check ----------------------------------------- */
-    const resp = await fetch(ENDPOINT_URL, {
-      method : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify(body)
-    });
 
     if (!resp.ok) throw new Error(`Erreur serveur (${resp.status})`);
 
