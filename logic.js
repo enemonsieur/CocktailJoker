@@ -725,23 +725,23 @@ async function exportMenu () {
     };
 
     console.log('⬆ sending', body);
+    
+    const resp = await fetch(ENDPOINT_URL, {
+      method: 'POST',              // no headers → no pre-flight
+      body: JSON.stringify(body)
+    });
 
-
-    if (!resp.ok) throw new Error(`Erreur serveur (${resp.status})`);
-
-    displayMessage(`Menu sauvegardé ! Code : ${code}`, 'success', `https://wa.me/237694218017?text=Votre%20code%20${code}`);
-
+    if (!resp.ok) throw new Error(`Serveur: ${resp.status}`);
+    displayMessage(`Menu sauvegardé ! Code : ${generateCode()}`, 'success',
+                   `https://wa.me/237694218017?text=Votre%20code%20${generateCode()}`);
   } catch (err) {
     console.error(err);
-    displayMessage(err.message || 'Erreur inconnue', 'error');
+    displayMessage('Sauvegarde échouée : ' + err.message, 'error');
   } finally {
-    /* UI unlock ----------------------------------------------- */
     btn.disabled = false;
     btn.textContent = originalTxt;
   }
 }
-
-
 
 // Generate a random code for menu identification
 function generateCode() {
