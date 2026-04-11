@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Debug Console</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .debug-log { background: #1e1e1e; color: #d4d4d4; font-family: 'Courier New', monospace; padding: 16px; border-radius: 8px; font-size: 12px; line-height: 1.5; max-height: 600px; overflow-y: auto; }
+    .debug-log .error { color: #f48771; }
+    .debug-log .success { color: #6a9955; }
+    .debug-log .warn { color: #ce9178; }
+    .debug-log .info { color: #569cd6; }
+    button { cursor: pointer; }
+  </style>
+</head>
+<body class="bg-gray-900 text-white p-8">
+
+<div class="max-w-4xl mx-auto">
+  <h1 class="text-4xl font-bold mb-8">🐛 CocktailJoker Debug Console</h1>
+
+  <div class="mb-6 flex gap-4 flex-wrap">
+    <button onclick="captureConsole()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-bold">Capture Console</button>
+    <button onclick="testStartApp()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded font-bold">Test startApp()</button>
+    <button onclick="testButtonClick()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded font-bold">Simulate Button Click</button>
+    <button onclick="clearLog()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded font-bold">Clear Log</button>
+  </div>
+
+  <div class="debug-log" id="debug-output"></div>
+
+  <div class="mt-6 bg-gray-800 p-4 rounded">
+    <h2 class="text-xl font-bold mb-4">Test Status</h2>
+    <div id="status-display" class="font-mono text-sm space-y-2">
+      <p>Load the page, then use buttons above to test.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Capture console.log, console.error, etc. -->
+<script>
+  const logs = [];
+
+  function addLog(type, message) {
+    const className = type === 'error' ? 'error' : type === 'warn' ? 'warn' : type === 'success' ? 'success' : 'info';
+    logs.push(`<span class="${className}">[${type.toUpperCase()}]</span> ${escapeHtml(message)}`);
+    updateDisplay();
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function updateDisplay() {
+    const output = document.getElementById('debug-output');
+    output.innerHTML = logs.join('<br>');
+    output.scrollTop = output.scrollHeight;
+  }
+
+  function clearLog() {
+    logs.length = 0;
+    updateDisplay();
+  }
+
+  // Intercept console methods
+  const originalLog = console.log;
+  const originalError = console.error;
+  const originalWarn = console.warn;
+
+  console.log = function(...args) {
+    originalLog.apply(console, args);
+    addLog('log', args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+  };
+
+  console.error = function(...args) {
+    originalError.apply(console, args);
+    addLog('error', args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+  };
+
+  console.warn = function(...args) {
+    originalWarn.apply(console, args);
+    addLog('warn', args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+  };
+
+  function captureConsole() {
+    addLog('info', '=== CONSOLE CAPTURE STARTED ===');
+    addLog('info', 'Checking window globals...');
+
+    const globals = ['startApp', 'exportMenu', 'CONFIG', 'DOM', 'AppState', 'renderCocktailList', 'renderSelected', 'generateMenu'];
+    globals.forEach(name => {
+      const type = typeof window[name];
+      const status = type !== 'undefined' ? '✓' : '✗';
+      addLog('info', `${status} window.${name}: ${type}`);
+    });
+  }
+
+  function testStartApp() {
+    addLog('warn', '=== TESTING startApp() ===');
+
+    if (typeof startApp !== 'function') {
+      addLog('error', 'startApp is NOT a function!');
+      return;
+    }
+
+    addLog('success', 'startApp() exists and is a function');
+
+    try {
+      // Get current state
+      const intro = document.getElementById('intro-section');
+      const list = document.getElementById('cocktail-list');
+
+      if (!intro || !list) {
+        addLog('error', 'Required DOM elements not found!');
+        return;
+      }
+
+      addLog('info', `Before: intro=${!intro.classList.contains('hidden') ? 'visible' : 'hidden'}, list=${!list.classList.contains('hidden') ? 'visible' : 'hidden'}`);
+
+      // Call startApp
+      startApp();
+
+      addLog('info', `After: intro=${!intro.classList.contains('hidden') ? 'visible' : 'hidden'}, list=${!list.classList.contains('hidden') ? 'visible' : 'hidden'}`);
+
+      if (intro.classList.contains('hidden') && !list.classList.contains('hidden')) {
+        addLog('success', '✅ startApp() worked perfectly!');
+      } else {
+        addLog('error', '❌ startApp() did not produce expected results');
+      }
+    } catch (e) {
+      addLog('error', `Exception: ${e.message}`);
+      addLog('error', e.stack);
+    }
+  }
+
+  function testButtonClick() {
+    addLog('warn', '=== SIMULATING BUTTON CLICK ===');
+
+    const btn = document.getElementById('start-btn');
+    if (!btn) {
+      addLog('error', 'Button #start-btn not found in DOM!');
+      return;
+    }
+
+    addLog('success', 'Button found: ' + btn.outerHTML.substring(0, 100) + '...');
+
+    try {
+      // Get the onclick handler
+      const onclick = btn.getAttribute('onclick');
+      addLog('info', `Button onclick attribute: ${onclick}`);
+
+      // Try to call it
+      if (onclick === 'startApp()') {
+        addLog('info', 'Calling startApp()...');
+        startApp();
+        addLog('success', 'Function executed');
+      } else {
+        addLog('error', `Expected onclick="startApp()" but got: ${onclick}`);
+      }
+    } catch (e) {
+      addLog('error', `Exception: ${e.message}`);
+      addLog('error', e.stack);
+    }
+  }
+</script>
+
+<!-- Load actual app scripts -->
+<script src="data.js"></script>
+<script src="config.js"></script>
+<script src="ui-helpers.js"></script>
+<script src="state.js"></script>
+<script src="logic-refactored.js"></script>
+
+<script>
+  // After scripts load, test
+  window.addEventListener('DOMContentLoaded', () => {
+    addLog('success', '✅ Page loaded, scripts parsed');
+    captureConsole();
+  });
+
+  // Auto-test after delay
+  setTimeout(() => {
+    if (typeof startApp !== 'undefined') {
+      addLog('info', 'Scripts loaded, ready to test');
+    }
+  }, 1000);
+</script>
+
+</body>
+</html>

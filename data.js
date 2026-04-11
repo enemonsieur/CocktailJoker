@@ -1040,3 +1040,13 @@ const cocktails = [
   }
 ];
 
+// ── Expose to window (browser) and module.exports (Node.js) ────
+if (typeof window !== 'undefined') {
+  window.cocktails = cocktails;
+  window.masterIngredients = masterIngredients;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { cocktails, masterIngredients };
+}
+

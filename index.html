@@ -4,171 +4,462 @@
 <head>
   <meta charset="UTF-8">
   <title>Optimisateur de Marges de Cocktails</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
-    button,[onclick]{cursor:pointer;}
-    @keyframes pulse-slow{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
-    .animate-pulse-slow{animation:pulse-slow 3s infinite;}
-    
-    /* WhatsApp floating button */
+    :root {
+      --bg: #f4efe6;
+      --surface: #fffaf2;
+      --surface-strong: #ffffff;
+      --surface-muted: #efe4d5;
+      --text: #1f2937;
+      --text-soft: #5f6b7a;
+      --heading: #18212f;
+      --primary: #0f766e;
+      --primary-strong: #115e59;
+      --secondary: #d97706;
+      --accent: #f59e0b;
+      --border: #d8c9b5;
+      --danger: #b42318;
+      --success: #166534;
+      --focus: #0ea5e9;
+      --shadow: 0 18px 40px rgba(31, 41, 55, 0.12);
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --space-xs: 0.5rem;
+      --space-sm: 0.875rem;
+      --space-md: 1.25rem;
+      --space-lg: 2rem;
+      --space-xl: 3rem;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at top left, rgba(245, 158, 11, 0.12), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(15, 118, 110, 0.12), transparent 24%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    button,
+    [onclick],
+    input,
+    select,
+    a {
+      cursor: pointer;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    a:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
+      box-shadow: none;
+    }
+
+    .app-shell {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    .hero-panel,
+    .workflow-panel,
+    .support-panel {
+      background: rgba(255, 250, 242, 0.92);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(216, 201, 181, 0.9);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-panel {
+      border-radius: var(--radius-lg);
+    }
+
+    .workflow-panel,
+    .support-panel {
+      border-radius: var(--radius-md);
+    }
+
+    .step-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.12);
+      color: var(--primary-strong);
+      font-size: 0.875rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .step-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .step-card {
+      background: var(--surface-strong);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+    }
+
+    .step-number {
+      width: 2rem;
+      height: 2rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: var(--primary);
+      color: white;
+      font-size: 0.875rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+
+    .section-title {
+      color: var(--heading);
+      font-size: 1.5rem;
+      line-height: 1.2;
+      font-weight: 800;
+    }
+
+    .section-intro {
+      color: var(--text-soft);
+      font-size: 0.98rem;
+      line-height: 1.6;
+      max-width: 65ch;
+    }
+
+    .primary-cta {
+      background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+      color: white;
+      min-height: 3.5rem;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 12px 24px rgba(15, 118, 110, 0.2);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+    }
+
+    .primary-cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 28px rgba(15, 118, 110, 0.24);
+    }
+
+    .secondary-surface {
+      background: var(--surface-strong);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    .field-hint {
+      color: var(--text-soft);
+      font-size: 0.82rem;
+      line-height: 1.45;
+      margin-top: 0.35rem;
+    }
+
+    .required-note {
+      color: var(--text-soft);
+      font-size: 0.85rem;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .status-badge--calm {
+      background: rgba(22, 101, 52, 0.12);
+      color: var(--success);
+    }
+
+    .status-badge--warm {
+      background: rgba(217, 119, 6, 0.12);
+      color: #9a3412;
+    }
+
     .whatsapp-float {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background-color: #25D366;
-      color: white;
-      border-radius: 50px;
-      padding: 8px 16px;
-      font-size: 14px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      z-index: 1000;
-      display: flex;
+      right: 1rem;
+      bottom: 1rem;
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 0.6rem;
+      padding: 0.85rem 1rem;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #0f5132;
       text-decoration: none;
-      transition: all 0.3s ease;
+      border: 1px solid rgba(37, 211, 102, 0.35);
+      box-shadow: 0 14px 30px rgba(31, 41, 55, 0.18);
+      z-index: 1000;
+      min-height: 3rem;
     }
+
     .whatsapp-float:hover {
-      background-color: #128C7E;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      transform: translateY(-1px);
     }
+
     .whatsapp-float i {
-      font-size: 20px;
+      color: #25d366;
+      font-size: 1.2rem;
     }
-    @media (max-width: 480px) {
-      .whatsapp-float {
-        font-size: 0;
-        padding: 10px;
+
+    #scroll-cta {
+      display: none;
+    }
+
+    #cocktail-list button,
+    #export-section button,
+    #menu-summary button {
+      min-height: 2.9rem;
+    }
+
+    #sales-estimation input,
+    #sales-estimation select {
+      min-height: 3rem;
+      border-radius: 0.85rem;
+      border: 1px solid var(--border);
+      background: #fff;
+    }
+
+    #sales-estimation label,
+    #sales-estimation legend {
+      font-weight: 700;
+      color: var(--heading);
+    }
+
+    @media (max-width: 900px) {
+      .step-grid {
+        grid-template-columns: 1fr 1fr;
       }
-      .whatsapp-float i {
-        font-size: 24px;
+    }
+
+    @media (max-width: 640px) {
+      .app-shell {
+        padding: 0.75rem;
+      }
+
+      .step-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .whatsapp-float {
+        right: 0.75rem;
+        bottom: 0.75rem;
+        padding: 0.8rem;
+      }
+
+      .whatsapp-float span {
+        display: none;
       }
     }
   </style>
 </head>
 
-<body class="bg-gray-100 text-gray-800">
+<body>
+  <header class="app-shell pt-4 md:pt-8">
+    <div class="hero-panel overflow-hidden">
+      <div class="grid gap-6 lg:grid-cols-[1.35fr_0.95fr]">
+        <section id="intro-section" class="px-5 py-8 sm:px-8 sm:py-10" aria-labelledby="hero-title">
+          <div class="step-chip mb-4">Outil de pilotage simple pour gérant</div>
+          <h1 id="hero-title" class="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 leading-tight max-w-3xl">
+            Comprenez rapidement quels cocktails vous rapportent vraiment.
+          </h1>
+          <p class="mt-4 max-w-2xl text-base sm:text-lg leading-8 text-slate-700">
+            En quelques minutes, estimez vos coûts, vos marges et votre potentiel mensuel sans feuille de calcul complexe.
+          </p>
+          <p class="mt-3 max-w-2xl text-sm sm:text-base leading-7 text-slate-600">
+            Les prix et exemples restent adaptés au contexte Cameroun, avec des repères pensés pour un bar, un hôtel, un restaurant ou un café.
+          </p>
 
-  <div class="max-w-screen-lg mx-auto px-4 py-4 md:py-8">
+          <div class="mt-6 grid gap-3 sm:grid-cols-3">
+            <div class="step-card">
+              <div class="text-lg mb-2" aria-hidden="true">🍸</div>
+              <p class="font-semibold text-slate-900">25 cocktails de base</p>
+              <p class="mt-1 text-sm text-slate-600">Une sélection rapide pour démarrer sans partir de zéro.</p>
+            </div>
+            <div class="step-card">
+              <div class="text-lg mb-2" aria-hidden="true">📍</div>
+              <p class="font-semibold text-slate-900">Contexte local conservé</p>
+              <p class="mt-1 text-sm text-slate-600">Repères de prix pensés pour Douala et Yaoundé.</p>
+            </div>
+            <div class="step-card">
+              <div class="text-lg mb-2" aria-hidden="true">⏱️</div>
+              <p class="font-semibold text-slate-900">Décision en moins de 5 min</p>
+              <p class="mt-1 text-sm text-slate-600">Choisissez, estimez, puis lisez un résumé clair.</p>
+            </div>
+          </div>
 
-  <!-- Intro section for first-time visitors -->
-  <div id="intro-section" class="bg-white rounded-xl shadow-md p-8 max-w-2xl mx-auto mt-10 text-center">
-    <h1 class="text-3xl sm:text-4xl leading-snug tracking-tight max-w-2xl mx-auto font-bold text-gray-900 mb-2">
-      Votre Bar ne rapporte pas autant qu’il devrait ?
-    </h1>
-    <p class="mb-6 max-w-xl mx-auto text-lg sm:text-xl leading-relaxed text-gray-700">
-      Si vous êtes gérant d'un BAR, HÔTEL, RESTAURANT, CAFÉ, etc...
-      Vous connaissez le stress de s'assurer que le Bar rapporte de l'argent chaque mois,
-      malgré les changements de produits, de barmen, et de clients...
-    </p>
-    <p class="text-gray-600 mb-6 text-base sm:text-lg lg:text-xl">
-      Avec <span class="font-semibold">notre Calculateur de Marges</span>, vous saurez en moins de 5 min
-      combien vous <span class="text-green-600 font-semibold">gagnez</span> (ou <span class="text-red-500 font-semibold">perdez</span>)
-      sur chaque cocktail, et dans <strong>tout le bar !</strong>
-    </p>
-    <div class="bg-blue-50 rounded-lg px-6 py-4 shadow-md mb-6">
-      <div class="grid sm:grid-cols-3 gap-6 items-start text-left text-sm text-gray-800 leading-tight">
-        <div>🔍 <strong>65+ Ingrédients</strong><br><span class="text-xs text-gray-600">Prix réels à Douala, Yaoundé</span></div>
-        <div>🍸 <strong>25 Cocktails</strong><br><span class="text-xs text-gray-600">Les plus populaires au Cameroun</span></div>
-        <div>🧠 <strong>Mixologues</strong><br><span class="text-xs text-gray-600">Expertise locale pour estimer vos marges</span></div>
+          <div class="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+            <button id="start-btn" onclick="startApp()" class="primary-cta px-6 text-base font-bold">
+              Commencer l'analyse
+            </button>
+            <p class="required-note">Aucune inscription. Vous choisissez vos cocktails, vous entrez vos ventes, puis vous obtenez un résumé simple.</p>
+          </div>
+        </section>
+
+        <aside class="support-panel px-5 py-8 sm:px-6 sm:py-10 border-l-0 lg:border-l lg:border-t-0 border-t border-[var(--border)]" aria-labelledby="workflow-title">
+          <div class="status-badge status-badge--calm mb-4">Parcours guidé en 4 étapes</div>
+          <h2 id="workflow-title" class="section-title">Ce que vous allez faire</h2>
+          <p class="section-intro mt-3">
+            L'outil suit un ordre simple pour éviter les erreurs et réduire la charge mentale.
+          </p>
+          <div class="step-grid mt-6">
+            <div class="step-card">
+              <div class="step-number">1</div>
+              <h3 class="font-semibold text-slate-900">Choisir</h3>
+              <p class="mt-1 text-sm text-slate-600">Sélectionnez les cocktails servis dans votre établissement.</p>
+            </div>
+            <div class="step-card">
+              <div class="step-number">2</div>
+              <h3 class="font-semibold text-slate-900">Vérifier</h3>
+              <p class="mt-1 text-sm text-slate-600">Ajustez ingrédients, prix et popularité si besoin.</p>
+            </div>
+            <div class="step-card">
+              <div class="step-number">3</div>
+              <h3 class="font-semibold text-slate-900">Estimer</h3>
+              <p class="mt-1 text-sm text-slate-600">Entrez vos ventes semaine et week-end.</p>
+            </div>
+            <div class="step-card">
+              <div class="step-number">4</div>
+              <h3 class="font-semibold text-slate-900">Décider</h3>
+              <p class="mt-1 text-sm text-slate-600">Lisez le résumé et identifiez les cocktails à surveiller.</p>
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
-    <p class="text-gray-800 mb-6 text-base sm:text-lg lg:text-xl">
-      🧠 Vous saurez en un clic quels cocktails ne sont pas <strong>rentables</strong>,
-      et comment les améliorer !
-    </p>
-    <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-11/12 sm:static sm:translate-x-0">
-      <button id="start-btn" onclick="startApp()" class="bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg text-xl py-4 px-8 shadow-lg hover:scale-105 transition-transform duration-200 animate-pulse-slow">
-        <span class="flex items-center justify-center gap-2">Commencer gratuitement <span aria-hidden="true">➔</span></span>
-      </button>
-    </div>
-    <p class="mt-2 text-gray-400 text-xs text-center">Aucune inscription nécessaire</p>
-  </div>
-    <button id="scroll-cta" onclick="startApp()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded shadow hidden">Commencer gratuitement</button>
+  </header>
 
-  <div class="text-center mt-6 animate-bounce text-gray-400 text-xl sm:mt-10">
-    ↓
-  </div>
+  <main class="app-shell pb-20 md:pb-24">
+    <section id="selection-step" class="workflow-panel mt-6 hidden px-5 py-6 sm:px-8 sm:py-8" aria-labelledby="selection-title">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div class="step-chip mb-3">Étape 1 · Sélection des cocktails</div>
+          <h2 id="selection-title" class="section-title">Choisissez les cocktails présents dans votre carte</h2>
+          <p class="section-intro mt-2">Commencez par les plus vendus. Vous pouvez ensuite créer un cocktail personnalisé si votre carte contient des recettes spécifiques.</p>
+        </div>
+        <p class="required-note">Astuce : commencez avec peu d'éléments, puis ajoutez-en progressivement.</p>
+      </div>
+      <div id="cocktail-list" class="mt-6" title="Choisissez les cocktails à analyser"></div>
+    </section>
 
-  <!-- Cocktail list buttons will mount here -->
-  <div id="cocktail-list" class="hidden mb-8" title="Cliquez pour ajouter un cocktail que vous servez dans votre bar"></div>
+    <section id="analysis-step" class="workflow-panel mt-6 hidden px-5 py-6 sm:px-8 sm:py-8" aria-labelledby="analysis-title">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div class="step-chip mb-3">Étape 2 · Vérification des coûts</div>
+          <h2 id="analysis-title" class="section-title">Vérifiez vos ingrédients, vos prix et votre marge</h2>
+          <p class="section-intro mt-2">Chaque carte cocktail affiche vos coûts, votre prix de vente et votre marge. Modifiez seulement ce qui est utile.</p>
+        </div>
+        <div class="status-badge status-badge--warm">Les calculs se mettent à jour automatiquement</div>
+      </div>
+      <div id="selected-cocktails" class="mt-6" aria-live="polite"></div>
+    </section>
 
-  <!-- Selected cocktails & cost analysis will mount here -->
-  <div id="selected-cocktails" class="hidden mb-8" ></div>
+    <section id="sales-step" class="workflow-panel mt-6 hidden px-5 py-6 sm:px-8 sm:py-8" aria-labelledby="sales-title">
+      <div class="step-chip mb-3">Étape 3 · Estimation des ventes</div>
+      <h2 id="sales-title" class="section-title">Entrez vos ventes estimées</h2>
+      <p class="section-intro mt-2">Ces informations servent à estimer le poids de chaque cocktail dans vos résultats mensuels.</p>
 
-  <!-- Inputs for sales estimation -->
-  <div id="sales-estimation" class="hidden mb-6 border-b border-gray-300 pb-4 grid grid-cols-2 gap-4" >
-    <p class="text-sm font-semibold col-span-2">Estimez vos ventes pour mieux calculer vos marges</p>
-    <p class="text-xs text-gray-600 mb-2 col-span-2">Pour mieux estimer vos marges, entrez le nombre de cocktails que votre bar vend en :</p>
-    <div class="col-span-2">
-      <p class="text-sm font-medium mb-1">Revenus mensuels bruts
-        <span class="ml-1 text-gray-400 cursor-help" title="Si vous connaissez vos revenus mensuels totaux, entrez-les ici pour un meilleur calcul de marge">🛈</span>
-      </p>
-      <select id="gross-revenue-input" class="w-full p-2 border rounded">
-        <option value=""></option>
-        <option value="500000">500K</option>
-        <option value="750000">750K</option>
-        <option value="1000000">1M</option>
-        <option value="1500000">1.5M</option>
-        <option value="2000000">2M</option>
-        <option value="2500000">2.5M</option>
-        <option value="3000000">3M</option>
-        <option value="4000000">4M</option>
-        <option value="5000000">5M+</option>
-      </select>
-    </div>
-    <div>
-      <p class="text-sm font-medium mb-1">Semaine
-        <span class="ml-1 text-gray-400 cursor-help" title="Période de faible activité (ex: lundi à jeudi)">🛈</span>
-      </p>
-      <input id="weekday-input" type="number" required class="w-full p-2 border rounded">
-    </div>
-    <div>
-      <p class="text-sm font-medium mb-1">Week-End
-        <span class="ml-1 text-gray-400 cursor-help" title="Période de forte activité (ex: vendredi à dimanche)">🛈</span>
-      </p>
-      <input id="weekend-input" type="number" required class="w-full p-2 border rounded">
+      <div id="sales-estimation" class="mt-6 grid gap-5 md:grid-cols-3">
+        <div class="secondary-surface p-4">
+          <label for="gross-revenue-input">Ventes mensuelles du bar (optionnel)</label>
+          <select id="gross-revenue-input" class="mt-2 w-full px-3">
+            <option value="">Je ne sais pas</option>
+            <option value="500000">500K FCFA</option>
+            <option value="750000">750K FCFA</option>
+            <option value="1000000">1M FCFA</option>
+            <option value="1500000">1.5M FCFA</option>
+            <option value="2000000">2M FCFA</option>
+            <option value="2500000">2.5M FCFA</option>
+            <option value="3000000">3M FCFA</option>
+            <option value="4000000">4M FCFA</option>
+            <option value="5000000">5M+ FCFA</option>
+          </select>
+          <p class="field-hint">À utiliser seulement si vous connaissez combien le bar vend au total par mois. Sinon, laissez ce champ vide.</p>
+        </div>
 
-    </div>
-  </div>
+        <div class="secondary-surface p-4">
+          <label for="weekday-input">Ventes en semaine <span class="text-red-700">*</span></label>
+          <input id="weekday-input" type="number" inputmode="numeric" min="0" required class="mt-2 w-full px-3">
+          <p class="field-hint">Entrez le nombre moyen de cocktails vendus par jour du lundi au jeudi.</p>
+          <p id="weekday-error" class="field-hint text-red-700 hidden">Indiquez une valeur ou laissez 0 si vous ne vendez pas de cocktails en semaine.</p>
+        </div>
 
-  <!-- Generate summary button -->
-  <div class="text-center my-8">
-    <button onclick="generateMenu()"
-      class="w-full sm:w-auto bg-indigo-600 text-white font-bold px-6 py-3 rounded-lg shadow-md hover:bg-indigo-700">
-      Générer le Résumé du Menu
-    </button>
-  </div>
+        <div class="secondary-surface p-4">
+          <label for="weekend-input">Ventes le week-end <span class="text-red-700">*</span></label>
+          <input id="weekend-input" type="number" inputmode="numeric" min="0" required class="mt-2 w-full px-3">
+          <p class="field-hint">Entrez le nombre moyen de cocktails vendus par jour du vendredi au dimanche.</p>
+          <p id="weekend-error" class="field-hint text-red-700 hidden">Indiquez une valeur ou laissez 0 si vous ne vendez pas de cocktails le week-end.</p>
+        </div>
+      </div>
 
+      <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p class="required-note">Les champs marqués d'un <span class="text-red-700">*</span> sont attendus pour produire un résumé utile.</p>
+        <button onclick="generateMenu()" class="primary-cta w-full px-6 text-base font-bold sm:w-auto">
+          Générer le résumé
+        </button>
+      </div>
+    </section>
 
-  <!-- Summary table will mount here -->
-  <div id="menu-summary" class="hidden" ></div>
+    <section id="summary-step" class="workflow-panel mt-6 hidden px-5 py-6 sm:px-8 sm:py-8" aria-labelledby="summary-title">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div class="step-chip mb-3">Étape 4 · Résumé et décision</div>
+          <h2 id="summary-title" class="section-title">Lisez votre résumé mensuel</h2>
+          <p class="section-intro mt-2">Le tableau montre les cocktails à surveiller et la contribution de chaque boisson dans vos résultats.</p>
+        </div>
+      </div>
+      <div id="menu-summary" class="mt-6" aria-live="polite"></div>
 
-  <!-- Export (save & WhatsApp) button -->
-  <div id="export-section" class="hidden text-center mb-8 mt-4" >
+      <div id="export-section" class="mt-6 hidden">
+        <div class="secondary-surface flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p class="font-semibold text-slate-900">Conservez votre analyse et partagez-la si besoin.</p>
+            <p class="field-hint">Le code généré vous aide à retrouver votre menu et à demander un accompagnement.</p>
+          </div>
+          <button onclick="exportMenu()" class="primary-cta w-full px-6 text-base font-bold sm:w-auto">
+            Sauvegarder l'analyse
+          </button>
+        </div>
+      </div>
+    </section>
 
-    <!-- Full-width button on mobile -->
-    <button onclick="exportMenu()" class="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-bold px-6 py-3 rounded-lg transition-colors duration-200">
-      Sauvegarder Votre Menu et Marges
-    </button>
-  </div>
+    <button id="scroll-cta" onclick="startApp()">Commencer l'analyse</button>
 
-  <!-- Data definitions, then app logic -->
-  <script src="data.js"></script>
-  <script src="logic.js"></script>
+    <script src="data.js"></script>
+    <script src="config.js"></script>
+    <script src="search-helpers.js"></script>
+    <script src="ui-helpers.js"></script>
+    <script src="state.js"></script>
+    <script src="pricing-optimizer.js"></script>
+    <script src="logic-refactored.js"></script>
+  </main>
 
-  </div> <!-- /wrapper -->
-
-  <!-- WhatsApp Floating Button -->
-  <a href="https://wa.me/237694218017?text=Bonjour%2C%20j'ai%20une%20question%20à%20propos%20de%20l'optimisateur%20de%20marges" 
-     class="whatsapp-float" 
-     target="_blank" 
-     rel="noopener noreferrer">
-    <i class="fab fa-whatsapp"></i>
-    <span>Besoin d'aide ?</span>
+  <a href="https://wa.me/237694218017?text=Bonjour%2C%20j%27ai%20une%20question%20%C3%A0%20propos%20de%20l%27optimisateur%20de%20marges"
+     class="whatsapp-float"
+     target="_blank"
+     rel="noopener noreferrer"
+     aria-label="Ouvrir WhatsApp pour demander de l'aide">
+    <i class="fab fa-whatsapp" aria-hidden="true"></i>
+    <span>Besoin d'aide</span>
   </a>
 </body>
 

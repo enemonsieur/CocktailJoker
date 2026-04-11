@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Real Button Test</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+
+<div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8">
+  <h1 class="text-3xl font-bold mb-4">🔧 Real Button Test</h1>
+  <div id="test-output" class="bg-gray-50 p-4 rounded border-2 border-gray-300 font-mono text-sm whitespace-pre-wrap mb-6" style="min-height: 200px; max-height: 400px; overflow-y: auto;"></div>
+
+  <button onclick="runFullTest()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mb-4">
+    Run Full Test
+  </button>
+  <button onclick="document.getElementById('test-output').innerHTML = ''" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded">
+    Clear Output
+  </button>
+</div>
+
+<!-- Load actual app scripts -->
+<script src="data.js"></script>
+<script src="config.js"></script>
+<script src="ui-helpers.js"></script>
+<script src="state.js"></script>
+<script src="logic-refactored.js"></script>
+
+<script>
+  function log(message) {
+    const output = document.getElementById('test-output');
+    const timestamp = new Date().toLocaleTimeString();
+    output.innerHTML += `[${timestamp}] ${message}\n`;
+    output.scrollTop = output.scrollHeight;
+  }
+
+  function runFullTest() {
+    log('═══════════════════════════════════════');
+    log('REAL BUTTON FUNCTIONALITY TEST');
+    log('═══════════════════════════════════════\n');
+
+    // Step 1: Check globals
+    log('Step 1: Checking window globals');
+    try {
+      if (typeof startApp !== 'function') {
+        log('❌ ERROR: startApp is not a function!');
+        log('   Type: ' + typeof startApp);
+        return;
+      }
+      log('✅ startApp is a function');
+    } catch (e) {
+      log('❌ ERROR: ' + e.message);
+      return;
+    }
+
+    log('');
+
+    // Step 2: Check DOM elements
+    log('Step 2: Checking DOM elements');
+    const intro = document.getElementById('intro-section');
+    const list = document.getElementById('cocktail-list');
+
+    if (!intro) {
+      log('❌ ERROR: #intro-section not found');
+      return;
+    }
+    log('✅ #intro-section found');
+
+    if (!list) {
+      log('❌ ERROR: #cocktail-list not found');
+      return;
+    }
+    log('✅ #cocktail-list found');
+
+    log('');
+
+    // Step 3: Check initial state
+    log('Step 3: Checking initial state');
+    const introVisible = !intro.classList.contains('hidden');
+    const listHidden = list.classList.contains('hidden');
+
+    log(`   Intro section: ${introVisible ? '✅ VISIBLE' : '❌ HIDDEN (should be visible)'}`);
+    log(`   Cocktail list: ${listHidden ? '✅ HIDDEN' : '❌ VISIBLE (should be hidden)'}`);
+
+    log('');
+
+    // Step 4: Call startApp()
+    log('Step 4: Calling startApp()');
+    try {
+      startApp();
+      log('✅ startApp() executed');
+    } catch (e) {
+      log('❌ ERROR: ' + e.message);
+      return;
+    }
+
+    log('');
+
+    // Step 5: Check state after click
+    log('Step 5: Checking state AFTER startApp()');
+    const introHiddenAfter = intro.classList.contains('hidden');
+    const listVisibleAfter = !list.classList.contains('hidden');
+
+    log(`   Intro section: ${introHiddenAfter ? '✅ HIDDEN' : '❌ VISIBLE (should be hidden)'}`);
+    log(`   Cocktail list: ${listVisibleAfter ? '✅ VISIBLE' : '❌ HIDDEN (should be visible)'}`);
+
+    log('');
+
+    // Final result
+    if (introHiddenAfter && listVisibleAfter) {
+      log('═══════════════════════════════════════');
+      log('✅✅✅ BUTTON WORKS PERFECTLY! ✅✅✅');
+      log('═══════════════════════════════════════');
+      log('');
+      log('The button successfully:');
+      log('  ✅ Hides the intro section');
+      log('  ✅ Shows the cocktail list');
+      log('  ✅ Executes all DOM changes');
+    } else {
+      log('═══════════════════════════════════════');
+      log('❌ TEST FAILED');
+      log('═══════════════════════════════════════');
+      log('');
+      if (!introHiddenAfter) log('  ❌ Intro section not hidden');
+      if (!listVisibleAfter) log('  ❌ Cocktail list not visible');
+    }
+  }
+
+  // Auto-run on load
+  window.addEventListener('DOMContentLoaded', () => {
+    log('Page loaded, scripts loaded');
+    log('Click "Run Full Test" to test the button functionality\n');
+  });
+
+  // Also try running the test immediately
+  setTimeout(() => {
+    if (typeof startApp !== 'undefined') {
+      log('Scripts loaded! Ready to test.');
+    }
+  }, 1000);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Button Diagnostic Tool</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .log-box { background: #000; color: #0f0; font-family: monospace; padding: 20px; border-radius: 8px; font-size: 13px; line-height: 1.6; max-height: 500px; overflow-y: auto; white-space: pre-wrap; word-wrap: break-word; }
+    .error { color: #ff0000; }
+    .success { color: #00ff00; }
+    .warn { color: #ffff00; }
+    .info { color: #00ccff; }
+  </style>
+</head>
+<body class="bg-gray-900 text-white p-8">
+
+<div class="max-w-3xl mx-auto">
+  <h1 class="text-4xl font-bold mb-8">🔧 Button Diagnostic Tool</h1>
+
+  <div class="mb-6 flex gap-2 flex-wrap">
+    <button onclick="runDiagnostics()" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-bold">🔍 Run Diagnostics</button>
+    <button onclick="testButton()" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded font-bold">🖱️ Test Button</button>
+    <button onclick="clearLog()" class="bg-red-600 hover:bg-red-700 px-6 py-2 rounded font-bold">Clear</button>
+  </div>
+
+  <div class="log-box" id="output"></div>
+
+  <div class="mt-6 bg-gray-800 p-4 rounded">
+    <h2 class="text-xl font-bold mb-4">📝 Instructions:</h2>
+    <ol class="space-y-2">
+      <li>1. Click "Run Diagnostics" to check if everything loaded correctly</li>
+      <li>2. Look for ✅ (green) = good, ❌ (red) = bad</li>
+      <li>3. If diagnostics pass, click "Test Button" to simulate a button click</li>
+      <li>4. If test fails, take a screenshot of this page and share it</li>
+      <li>5. Open DevTools (F12), go to Console tab, and look for red error messages</li>
+    </ol>
+  </div>
+</div>
+
+<!-- Load the app scripts -->
+<script src="data.js"></script>
+<script src="config.js"></script>
+<script src="ui-helpers.js"></script>
+<script src="state.js"></script>
+<script src="logic-refactored.js"></script>
+
+<script>
+  const output = document.getElementById('output');
+  let logLines = [];
+
+  function log(msg, type = 'info') {
+    const color = {
+      error: 'error',
+      success: 'success',
+      warn: 'warn',
+      info: 'info'
+    }[type] || 'info';
+
+    logLines.push(`<span class="${color}">[${type.toUpperCase()}]</span> ${escapeHtml(msg)}`);
+    updateOutput();
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function updateOutput() {
+    output.innerHTML = logLines.join('\n');
+    output.scrollTop = output.scrollHeight;
+  }
+
+  function clearLog() {
+    logLines = [];
+    updateOutput();
+  }
+
+  function runDiagnostics() {
+    clearLog();
+    log('═'.repeat(60), 'info');
+    log('RUNNING DIAGNOSTICS', 'info');
+    log('═'.repeat(60), 'info');
+    log('', 'info');
+
+    // Test 1: Window globals
+    log('TEST 1: Checking window globals', 'info');
+    const checks = [
+      { name: 'window.startApp', type: 'function' },
+      { name: 'window.exportMenu', type: 'function' },
+      { name: 'window.DOM', type: 'object' },
+      { name: 'window.cocktails', type: 'object' },
+      { name: 'window.masterIngredients', type: 'object' },
+      { name: 'window.CONFIG', type: 'object' },
+      { name: 'window.AppState', type: 'object' }
+    ];
+
+    let allGood = true;
+    checks.forEach(check => {
+      const actual = typeof window[check.name.split('.')[1]];
+      const expected = check.type;
+      const ok = actual === expected;
+      if (!ok) allGood = false;
+      log(`  ${ok ? '✅' : '❌'} ${check.name}: ${actual} (expected ${expected})`, ok ? 'success' : 'error');
+    });
+
+    log('', 'info');
+
+    // Test 2: DOM elements
+    log('TEST 2: Checking DOM elements', 'info');
+    const elements = ['intro-section', 'cocktail-list', 'start-btn', 'selected-cocktails', 'sales-estimation'];
+    elements.forEach(id => {
+      const el = document.getElementById(id);
+      const ok = el !== null;
+      log(`  ${ok ? '✅' : '❌'} #${id}`, ok ? 'success' : 'error');
+      if (!ok) allGood = false;
+    });
+
+    log('', 'info');
+
+    // Test 3: Initial state
+    log('TEST 3: Checking initial DOM state', 'info');
+    const intro = document.getElementById('intro-section');
+    const list = document.getElementById('cocktail-list');
+
+    if (intro && list) {
+      const introVisible = !intro.classList.contains('hidden');
+      const listHidden = list.classList.contains('hidden');
+      log(`  ${introVisible ? '✅' : '❌'} Intro section is visible`, introVisible ? 'success' : 'error');
+      log(`  ${listHidden ? '✅' : '❌'} Cocktail list is hidden`, listHidden ? 'success' : 'error');
+    }
+
+    log('', 'info');
+
+    // Test 4: Check for console errors
+    log('TEST 4: Console errors (check DevTools Console tab)', 'info');
+    log('  Open your browser console (F12) to see any errors', 'warn');
+
+    log('', 'info');
+    log('═'.repeat(60), 'info');
+    if (allGood) {
+      log('✅ DIAGNOSTICS PASSED - Click "Test Button" next', 'success');
+    } else {
+      log('❌ DIAGNOSTICS FAILED - See errors above', 'error');
+    }
+    log('═'.repeat(60), 'info');
+  }
+
+  function testButton() {
+    clearLog();
+    log('═'.repeat(60), 'info');
+    log('TESTING BUTTON CLICK', 'info');
+    log('═'.repeat(60), 'info');
+    log('', 'info');
+
+    // Get elements
+    const intro = document.getElementById('intro-section');
+    const list = document.getElementById('cocktail-list');
+    const btn = document.getElementById('start-btn');
+
+    if (!intro || !list || !btn) {
+      log('❌ ERROR: Required elements not found', 'error');
+      return;
+    }
+
+    // Initial state
+    log('BEFORE clicking button:', 'info');
+    const introVisibleBefore = !intro.classList.contains('hidden');
+    const listVisibleBefore = !list.classList.contains('hidden');
+    log(`  Intro section: ${introVisibleBefore ? 'VISIBLE' : 'HIDDEN'}`, 'info');
+    log(`  Cocktail list: ${listVisibleBefore ? 'VISIBLE' : 'HIDDEN'}`, 'info');
+    log('', 'info');
+
+    log('Calling startApp()...', 'info');
+    try {
+      startApp();
+      log('✅ startApp() executed without errors', 'success');
+    } catch (e) {
+      log(`❌ startApp() threw error: ${e.message}`, 'error');
+      log(e.stack, 'error');
+      return;
+    }
+
+    log('', 'info');
+
+    // Final state
+    log('AFTER clicking button:', 'info');
+    const introVisibleAfter = !intro.classList.contains('hidden');
+    const listVisibleAfter = !list.classList.contains('hidden');
+    log(`  Intro section: ${introVisibleAfter ? 'VISIBLE' : 'HIDDEN'}`, 'info');
+    log(`  Cocktail list: ${listVisibleAfter ? 'VISIBLE' : 'HIDDEN'}`, 'info');
+    log('', 'info');
+
+    log('═'.repeat(60), 'info');
+    if (!introVisibleAfter && listVisibleAfter) {
+      log('✅✅✅ BUTTON WORKS PERFECTLY! ✅✅✅', 'success');
+      log('The intro section is now hidden and cocktail list is visible', 'success');
+    } else {
+      log('❌ BUTTON TEST FAILED', 'error');
+      log('Expected: intro hidden, list visible', 'error');
+      log(`Got: intro ${introVisibleAfter ? 'visible' : 'hidden'}, list ${listVisibleAfter ? 'visible' : 'hidden'}`, 'error');
+    }
+    log('═'.repeat(60), 'info');
+  }
+
+  // Auto-run diagnostics when page loads
+  window.addEventListener('DOMContentLoaded', () => {
+    log('Page loaded. Click "Run Diagnostics" to start testing.', 'info');
+  });
+
+  // Intercept console.error
+  const originalError = console.error;
+  console.error = function(...args) {
+    originalError.apply(console, args);
+    log('CONSOLE ERROR: ' + args.join(' '), 'error');
+  };
+</script>
+
+</body>
+</html>

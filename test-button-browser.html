@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Button Test - Real App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .test-log { background: #f0f0f0; padding: 15px; margin: 15px 0; border-left: 4px solid #0066cc; border-radius: 4px; font-family: monospace; font-size: 13px; white-space: pre-wrap; word-wrap: break-word; max-height: 400px; overflow-y: auto; }
+    .success { color: #00aa00; }
+    .error { color: #aa0000; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body class="bg-gray-100 p-8">
+
+<div class="max-w-2xl mx-auto">
+  <h1 class="text-3xl font-bold mb-8">CocktailJoker Button Test</h1>
+
+  <div class="bg-white rounded-lg shadow-lg p-6">
+    <h2 class="text-xl font-bold mb-4">Test Results</h2>
+    <div id="test-log" class="test-log"></div>
+
+    <div class="mt-6 flex gap-4">
+      <button onclick="runTest()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+        Run Test
+      </button>
+      <button onclick="document.getElementById('test-log').innerHTML = ''" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded">
+        Clear Log
+      </button>
+    </div>
+  </div>
+
+  <div id="live-test" class="mt-8 bg-white rounded-lg shadow-lg p-6 hidden">
+    <h2 class="text-xl font-bold mb-4">Live Test: Click the Button</h2>
+    <div id="intro-section" class="border-2 border-blue-500 p-4 mb-4 bg-blue-50 rounded">
+      <h3 class="font-bold mb-4">Intro Section (will hide when you click button)</h3>
+      <button id="start-btn" onclick="startApp()" class="bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg text-lg py-3 px-6 shadow-lg">
+        Commencer gratuitement
+      </button>
+    </div>
+    <div id="cocktail-list" class="border-2 border-orange-500 p-4 bg-orange-50 rounded hidden">
+      <h3 class="font-bold">Cocktail List Section (visible after button click)</h3>
+      <p class="mt-2">✓ Button works! This section is now visible.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  function log(message, isError = false) {
+    const logEl = document.getElementById('test-log');
+    const timestamp = new Date().toLocaleTimeString();
+    const prefix = isError ? '[ERROR]' : '[LOG]';
+    const line = `${timestamp} ${prefix} ${message}`;
+    logEl.innerHTML += `<div class="${isError ? 'error' : ''}">${line}\n</div>`;
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function runTest() {
+    document.getElementById('test-log').innerHTML = '';
+    document.getElementById('live-test').classList.remove('hidden');
+
+    log('Starting button functionality test...');
+    log('');
+
+    // Test 1: Check window globals
+    log('Test 1: Checking window globals');
+    let allGood = true;
+
+    ['CONFIG', 'DOM', 'AppState', 'startApp', 'exportMenu'].forEach(name => {
+      const exists = typeof window[name] !== 'undefined';
+      log(`  ${exists ? '✓' : '✗'} window.${name}: ${typeof window[name]}`);
+      if (name === 'startApp' && !exists) allGood = false;
+    });
+
+    log('');
+
+    // Test 2: Check DOM elements
+    log('Test 2: Checking DOM elements');
+    const introEl = document.getElementById('intro-section');
+    const cocktailEl = document.getElementById('cocktail-list');
+    const btnEl = document.getElementById('start-btn');
+
+    log(`  ${introEl ? '✓' : '✗'} #intro-section exists`);
+    log(`  ${cocktailEl ? '✓' : '✗'} #cocktail-list exists`);
+    log(`  ${btnEl ? '✓' : '✗'} #start-btn exists`);
+
+    if (!introEl || !cocktailEl) {
+      log('ERROR: Required DOM elements not found!', true);
+      return;
+    }
+
+    log('');
+
+    // Test 3: Test button click
+    log('Test 3: Simulating button click');
+
+    try {
+      if (typeof startApp === 'function') {
+        startApp();
+        log('✓ startApp() executed without errors');
+
+        // Check state changes
+        const introHidden = introEl.classList.contains('hidden');
+        const cocktailVisible = !cocktailEl.classList.contains('hidden');
+
+        log('');
+        log('Test 4: Checking DOM state after click');
+        log(`  ${introHidden ? '✓' : '✗'} Intro section is ${introHidden ? 'HIDDEN' : 'VISIBLE'}`);
+        log(`  ${cocktailVisible ? '✓' : '✗'} Cocktail list is ${cocktailVisible ? 'VISIBLE' : 'HIDDEN'}`);
+
+        log('');
+
+        if (introHidden && cocktailVisible) {
+          log('<span class="success">✓✓✓ SUCCESS: Button works perfectly! ✓✓✓</span>');
+          log('');
+          log('The "Commencer gratuitement" button is fully functional.');
+          log('Try clicking it in the Live Test section above!');
+        } else {
+          log('✗ Some DOM changes did not occur as expected', true);
+        }
+      } else {
+        log('ERROR: startApp is not a function', true);
+        log(`  Type: ${typeof startApp}`);
+      }
+    } catch (err) {
+      log(`ERROR: Exception when calling startApp()`, true);
+      log(`  ${err.message}`);
+      log(`  ${err.stack}`);
+    }
+  }
+
+  // Auto-run test on load
+  window.addEventListener('DOMContentLoaded', () => {
+    log('Page loaded');
+    log('Ready to test. Click "Run Test" button to start.');
+  });
+</script>
+
+<!-- Load the actual app scripts -->
+<script src="data.js"></script>
+<script src="config.js"></script>
+<script src="ui-helpers.js"></script>
+<script src="state.js"></script>
+<script src="logic-refactored.js"></script>
+
+</body>
+</html>
