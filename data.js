@@ -82,6 +82,7 @@ const masterIngredients = {
     "Sauce Worcestershire":  { unitServed: "cl",    buyVolume: 0.25,  buyUnit: "liter", price: 2000 },
     "Sorbet à la fraise":    { unitServed: "cl",    buyVolume: 0.5,   buyUnit: "liter", price: 3500 },
     "Sirop d’ananas":        { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 3000 },
+    "Sirop de passion":      { unitServed: "cl",    buyVolume: 0.7,   buyUnit: "liter", price: 3500 },
   
   /* ————————————— 𝕊𝕔𝕙𝕖𝕣𝕖𝕤𝕤𝕖𝕤  & 𝕊𝕪𝕣𝕦𝕡𝕤 ———————————————— */
 
@@ -101,6 +102,11 @@ const masterIngredients = {
 
   "Strawberry syrup":           { unitServed: "cl",    buyVolume: 0.7,   buyUnit: "liter", price: 3500 },
   "Sirop de fraise":            { unitServed: "cl",    buyVolume: 0.7,   buyUnit: "liter", price: 3500 },
+  "Sirop de cassis":            { unitServed: "cl",    buyVolume: 0.7,   buyUnit: "liter", price: 6000 },
+  "Betterave":                  { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 1200 },
+  "Miel":                       { unitServed: "cl",    buyVolume: 0.5,   buyUnit: "liter", price: 2500 },
+  "Jus de papaye":              { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 2000 },
+  "Sirop de pêche":             { unitServed: "cl",    buyVolume: 0.7,   buyUnit: "liter", price: 3500 },
 
   /* —————————————— 𝔹𝕤𝕜𝕦𝕚𝕥𝕤  𝕒𝕝𝕔𝕠𝕠𝕝 —————————————— */
 
@@ -140,8 +146,10 @@ const masterIngredients = {
   "Bénédictine DOM":            { unitServed: "cl",    buyVolume: 0.7,   buyUnit: "liter", price: 11000 },
 
   "Bailey's":                   { unitServed: "cl",    buyVolume: 0.7,   buyUnit: "liter", price: 9500 },
+  "Jagermeister":               { unitServed: "cl",    buyVolume: 0.7,   buyUnit: "liter", price: 8500 },
 
   "Angostura":                  { unitServed: "cl",    buyVolume: 0.2,   buyUnit: "liter", price: 3000 },
+  "Aromatic Bitter":            { unitServed: "cl",    buyVolume: 0.2,   buyUnit: "liter", price: 3000 },
 
   /* ————————————— 𝔸𝕝𝕔𝕠𝕠𝕝 𝕔𝕠𝕧𝕖𝕣𝕤 𝕲𝕖𝕟𝕖́𝕣𝕒𝕝𝕚𝕤𝕖́𝕤 ————————————— */
 
@@ -167,6 +175,7 @@ const masterIngredients = {
 
   "Coffee":                     { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 1500 },
     // (« Café noir / Café expresso / Espresso / Coffee » fusionnés sous « Coffee »)
+  "Sauce chocolat":             { unitServed: "cl",    buyVolume: 0.5,   buyUnit: "liter", price: 2500 },
 
   "Rum":                        { unitServed: "cl",    buyVolume: 0.7,   buyUnit: "liter", price: 7000 },
     // (« Rhum blanc / Rum » fusionnés sous « Rhum blanc » ; mais on conserve « Rum » aussi pour code)
@@ -178,21 +187,72 @@ const masterIngredients = {
     "Vanilla ice Crème":     { unitServed: "cl",    buyVolume: 0.5,   buyUnit: "liter", price: 3500 },
     "Milk":                  { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 800 },
     "Liqueur de cerise":     { unitServed: "cl",    buyVolume: 0.7,   buyUnit: "liter", price: 9500 },
-    "Vin blanc":             { unitServed: "cl",    buyVolume: 0.75,  buyUnit: "liter", price: 3500 }
+    "Vin blanc":             { unitServed: "cl",    buyVolume: 0.75,  buyUnit: "liter", price: 3500 },
+    "Aperol":                { unitServed: "cl",    buyVolume: 0.7,   buyUnit: "liter", price: 7000 },
+    "Prosecco":              { unitServed: "cl",    buyVolume: 0.75,  buyUnit: "liter", price: 7000 },
+    "Bottega Limoncino":     { unitServed: "cl",    buyVolume: 0.7,   buyUnit: "liter", price: 7000 },
+    "Korean soju":           { unitServed: "cl",    buyVolume: 0.36,  buyUnit: "liter", price: 6000 },
+    "Purée de mangue":       { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 2500 },
+
+  /* ——————————— 🍶 𝕃𝔼𝕊 ℂ𝕆ℕ𝔽𝕀𝕆𝕋𝔼𝕊 — 𝕃𝕀ℚ𝕌𝔼𝕌ℝ𝕊 (𝟟𝟝𝕔𝕝) ——————————— */
+
+  "LC Liqueur Adam":            { unitServed: "cl",    buyVolume: 0.75,  buyUnit: "liter", price: 10000 },
+    // Fruit d'Adam — liqueur artisanale camerounaise
+  "LC Liqueur Awou":            { unitServed: "cl",    buyVolume: 0.75,  buyUnit: "liter", price: 15000 },
+    // Awou-Citronelle — liqueur artisanale camerounaise
+  "LC Liqueur Café Cannelle":   { unitServed: "cl",    buyVolume: 0.75,  buyUnit: "liter", price: 10000 },
+  "LC Liqueur Cerise de forêt": { unitServed: "cl",    buyVolume: 0.75,  buyUnit: "liter", price: 10000 },
+  "LC Liqueur Épicée":          { unitServed: "cl",    buyVolume: 0.75,  buyUnit: "liter", price: 10000 },
+    // Épicée (Liqueur de Mbongo) — ingrédient clé du Dawa
+  "LC Liqueur Kai-Gingembre":   { unitServed: "cl",    buyVolume: 0.75,  buyUnit: "liter", price: 10000 },
+  "LC Liqueur Lemonchello":     { unitServed: "cl",    buyVolume: 0.75,  buyUnit: "liter", price: 10000 },
+  "LC Liqueur Macho":           { unitServed: "cl",    buyVolume: 0.75,  buyUnit: "liter", price: 10000 },
+  "LC Liqueur Mangue":          { unitServed: "cl",    buyVolume: 0.75,  buyUnit: "liter", price: 10000 },
+  "LC Liqueur Maracuja":        { unitServed: "cl",    buyVolume: 0.75,  buyUnit: "liter", price: 10000 },
+  "LC Liqueur Mbongo":          { unitServed: "cl",    buyVolume: 0.75,  buyUnit: "liter", price: 15000 },
+    // Mbongo — liqueur premium, ingrédient clé du Dawa
+  "LC Liqueur Ndundum":         { unitServed: "cl",    buyVolume: 0.75,  buyUnit: "liter", price: 25000 },
+    // Ndundum — liqueur top de gamme
+  "LC Liqueur Punch Ananas":    { unitServed: "cl",    buyVolume: 0.75,  buyUnit: "liter", price: 10000 },
+  "LC Liqueur Sangria":         { unitServed: "cl",    buyVolume: 0.75,  buyUnit: "liter", price: 3500 },
+
+  /* ——————————— 🍶 𝕃𝔼𝕊 ℂ𝕆ℕ𝔽𝕀𝕆𝕋𝔼𝕊 — 𝕊𝕀ℝ𝕆ℙ𝕊 (𝟙𝕃) ——————————— */
+
+  "LC Sirop Ananas":            { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 5000 },
+  "LC Sirop Bissap":            { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 5000 },
+  "LC Sirop Bita Cola":         { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 9500 },
+  "LC Sirop Cannelle":          { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 9500 },
+  "LC Sirop Caramel":           { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 5000 },
+  "LC Sirop Citron":            { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 6500 },
+  "LC Sirop Citronnelle":       { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 6000 },
+  "LC Sirop Coco":              { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 9500 },
+  "LC Sirop Corossol":          { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 6500 },
+  "LC Sirop Épices":            { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 9500 },
+  "LC Sirop Gingembre":         { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 5000 },
+    // Ingrédient clé de La Séparante
+  "LC Sirop Kassmango":         { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 5000 },
+  "LC Sirop Mangue":            { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 5000 },
+  "LC Sirop Menthe":            { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 6000 },
+  "LC Sirop Passion":           { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 6500 },
+
+  /* ——————————— 🍶 𝕃𝔼𝕊 ℂ𝕆ℕ𝔽𝕀𝕆𝕋𝔼𝕊 — ℝℍ𝕌𝕄 𝔸ℝℝ𝔸ℕ𝔾É (𝟙𝕃) ——————————— */
+
+  "LC Rhum Arrangé":            { unitServed: "cl",    buyVolume: 1.0,   buyUnit: "liter", price: 16000 }
+    // Fond de liqueurs 7 ans d'âge — 5L sur commande
 
 };
 
 const cocktails = [
   {
     name: "Mojito",
-    price: 3500,
+    price: 5500,
     popularity: 5,
     ingredients: [
       { name: "Rhum blanc", volume: 5 },
       { name: "Jus de citron", volume: 3 },
-      { name: "Sirop de sucre", volume: 1 },
+      { name: "Sirop de canne", volume: 1.5 },
       { name: "Feuilles de menthe", volume: 6 },
-      { name: "Eau gazeuse", volume: 6 }
+      { name: "Sprite", volume: 6 }
     ]
   },
   {
@@ -304,7 +364,7 @@ const cocktails = [
   },
   {
     name: "Tequila Sunrise",
-    price: 6700,
+    price: 5000,
     popularity: 5,
     ingredients: [
       { name: "Tequila", volume: 4.5 },
@@ -415,14 +475,14 @@ const cocktails = [
     ]
   },
   {
-    name: "Whiskey Sour",
-    price: 9167,
+    name: "Whisky Sour",
+    price: 6000,
     popularity: 4,
     ingredients: [
-      { name: "Jack Daniel’s", volume: 4.5 },
+      { name: "Whisky", volume: 4.5 },
       { name: "Jus de citron", volume: 3 },
-      { name: "Sirop de sucre", volume: 1.5 },
-      { name: "Blanc d'œuf", volume: 2 }
+      { name: "Sirop de canne", volume: 1.5 },
+      { name: "Blanc d'œuf", volume: 1 }
     ]
   },
   {
@@ -448,26 +508,84 @@ const cocktails = [
   },
   {
     name: "Caipirinha",
-    price: 6500,
+    price: 4500,
     popularity: 4,
     ingredients: [
       { name: "Cachaça", volume: 6 },
-      { name: "Tranche de citron", volume: 4 },
-      { name: "Sucre", volume: 1 }
+      { name: "Jus de citron", volume: 3 },
+      { name: "Sirop de canne", volume: 1.5 }
     ]
   },
   {
-    name: "The Roo top Experience",
-    price: 6000,
+    name: "The Rooftop Cream",
+    price: 4000,
+    popularity: 1,
+    ingredients: [
+      { name: "Rhum blanc", volume: 4.5 },
+      { name: "Lait", volume: 6 },
+      { name: "Café noir", volume: 3 },
+      { name: "Crème chantilly", volume: 2 }
+    ]
+  },
+  {
+    name: "The Rooftop Experience",
+    price: 6500,
     popularity: 1,
     ingredients: [
       { name: "Sirop de fraise", volume: 1.5 },
-      { name: "Sour mix", volume: 3 },
-      { name: "Rhum à la noix de coco", volume: 4.5 },
+      { name: "Jus de citron", volume: 2 },
+      { name: "Sirop de canne", volume: 1 },
+      { name: "Malibu", volume: 3 },
       { name: "Jus d’ananas", volume: 6 },
       { name: "Blue de Curaçao", volume: 1.5 },
       { name: "Tequila", volume: 1.5 },
       { name: "Vodka", volume: 1.5 }
+    ]
+  },
+  {
+    name: "Fighting Temptation",
+    price: 6000,
+    popularity: 1,
+    ingredients: [
+      { name: "Rhum blanc", volume: 4.5 },
+      { name: "Jus d’ananas", volume: 6 },
+      { name: "Jus de citron", volume: 2 },
+      { name: "Aromatic Bitter", volume: 0.5 }
+    ]
+  },
+  {
+    name: "Miami Vice",
+    price: 6500,
+    popularity: 1,
+    ingredients: [
+      { name: "Rhum blanc", volume: 4.5 },
+      { name: "Sirop de fraise", volume: 1.5 },
+      { name: "Crème de coco", volume: 3 },
+      { name: "Jus d’ananas", volume: 6 },
+      { name: "Jus de citron", volume: 2 },
+      { name: "Sirop de canne", volume: 1 }
+    ]
+  },
+  {
+    name: "Gin Fitz",
+    price: 6000,
+    popularity: 1,
+    ingredients: [
+      { name: "Gin", volume: 4.5 },
+      { name: "Jus de citron", volume: 3 },
+      { name: "Sirop de canne", volume: 1.5 },
+      { name: "Blanc d'œuf", volume: 1 }
+    ]
+  },
+  {
+    name: "Blue Bird",
+    price: 5500,
+    popularity: 1,
+    ingredients: [
+      { name: "Gin", volume: 4.5 },
+      { name: "Blue de Curaçao", volume: 1.5 },
+      { name: "Sirop d’orgeat", volume: 1.5 },
+      { name: "Jus de citron", volume: 3 }
     ]
   },
   {
@@ -605,11 +723,12 @@ const cocktails = [
   },
   {
     name: "Cuba Libre",
-    price: 3000,
+    price: 5000,
     popularity: 1,
     ingredients: [
       { name: "Rhum blanc", volume: 4.5 },
-      { name: "Jus de citron", volume: 1 },
+      { name: "Jus de citron", volume: 2 },
+      { name: "Sirop de canne", volume: 1 },
       { name: "Coca-Cola", volume: 12 }
     ]
   },
@@ -710,8 +829,9 @@ const cocktails = [
     price: 5500,
     popularity: 3,
     ingredients: [
+      { name: "Vodka", volume: 4.5 },
+      { name: "Sirop de passion", volume: 1.5 },
       { name: "Jus d’ananas", volume: 6 },
-      { name: "Jus de passion", volume: 6 },
       { name: "Jus de citron", volume: 2 },
       { name: "Sirop de grenadine", volume: 1 }
     ]
@@ -820,233 +940,81 @@ const cocktails = [
     ]
   },
   {
-    name: "Special CK",
+    name: "Aperol Spritz",
     price: 4000,
     popularity: 1,
-    ingredients: []
+    ingredients: [
+      { name: "Aperol", volume: 3 },
+      { name: "Prosecco", volume: 6 },
+      { name: "Eau gazeuse", volume: 3 }
+    ]
   },
   {
-    name: "Bahamas",
-    price: 5000,
+    name: "Lemon Spritz",
+    price: 4000,
     popularity: 1,
     ingredients: [
-      { name: "Rhum brun", volume: 4.5 },
-      { name: "Crème de coco", volume: 3 },
-      { name: "Jus d’ananas", volume: 9 }
+      { name: "Bottega Limoncino", volume: 3 },
+      { name: "Prosecco", volume: 6 },
+      { name: "Eau gazeuse", volume: 3 }
     ]
   },
   {
-    name: "Dry Martini",
-    price: 9000,
+    name: "Mango Spritz",
+    price: 7000,
     popularity: 1,
     ingredients: [
-      { name: "Gin", volume: 6 },
-      { name: "Vermouth sec", volume: 1 }
+      { name: "Korean soju", volume: 3 },
+      { name: "Prosecco", volume: 6 },
+      { name: "Eau gazeuse", volume: 3 },
+      { name: "Purée de mangue", volume: 3 }
     ]
   },
   {
-    name: "Long Island Tea",
-    price: 9000,
+    name: "Black & White",
+    price: 4000,
     popularity: 1,
     ingredients: [
-      { name: "Vodka", volume: 1.5 },
-      { name: "Gin", volume: 1.5 },
-      { name: "Rhum blanc", volume: 1.5 },
-      { name: "Tequila", volume: 1.5 },
-      { name: "Triple sec", volume: 1.5 },
-      { name: "Jus de citron", volume: 3 },
-      { name: "Coca-Cola", volume: 5 }
-    ]
-  },
-  {
-    name: "Singapore Sling",
-    price: 9000,
-    popularity: 1,
-    ingredients: [
-      { name: "Gin", volume: 3 },
-      { name: "Liqueur de cerise", volume: 1.5 },
-      { name: "Bénédictine DOM", volume: 0.75 },
-      { name: "Cointreau", volume: 0.75 },
-      { name: "Jus d’ananas", volume: 6 },
-      { name: "Jus de citron", volume: 1.5 },
-      { name: "Sirop de grenadine", volume: 0.5 },
-      { name: "Angostura", volume: 1 }
-    ]
-  },
-  {
-    name: "White Russian",
-    price: 10000,
-    popularity: 3,
-    ingredients: [
-      { name: "Vodka", volume: 5 },
-      { name: "Liqueur de café", volume: 2 },
-      { name: "Crème", volume: 3 }
-    ]
-  },
-  {
-    name: "Planter’s Punch",
-    price: 9000,
-    popularity: 1,
-    ingredients: [
-      { name: "Rhum brun", volume: 4.5 },
-      { name: "Jus de citron", volume: 3 },
-      { name: "Sirop de sucre", volume: 1 },
-      { name: "Sirop de grenadine", volume: 1 },
-      { name: "Angostura", volume: 1 }
-    ]
-  },
-  {
-    name: "Mai-Tai",
-    price: 9000,
-    popularity: 1,
-    ingredients: [
-      { name: "Rhum blanc", volume: 3 },
-      { name: "Rhum brun", volume: 3 },
-      { name: "Jus de citron", volume: 3 },
-      { name: "Sirop d’orgeat", volume: 1.5 },
-      { name: "Orange curaçao", volume: 1.5 }
-    ]
-  },
-  {
-    name: "Negroni",
-    price: 10000,
-    popularity: 4,
-    ingredients: [
-      { name: "Gin", volume: 3 },
-      { name: "Campari", volume: 3 },
-      { name: "Vermouth rouge", volume: 3 }
-    ]
-  },
-  {
-    name: "Old Fashioned",
-    price: 9000,
-    popularity: 2,
-    ingredients: [
-      { name: "Bourbon", volume: 6 },
-      { name: "Sucre", volume: 0.5 },
-      { name: "Angostura", volume: 2 }
-    ]
-  },
-  {
-    name: "Pussy Foot",
-    price: 8500,
-    popularity: 1,
-    ingredients: [
-      { name: "Jus d’orange", volume: 6 },
-      { name: "Jus d’ananas", volume: 6 },
+      { name: "Jus d'orange", volume: 3 },
+      { name: "Jus d'ananas", volume: 3 },
       { name: "Jus de citron", volume: 2 },
       { name: "Sirop de grenadine", volume: 1 }
     ]
   },
   {
-    name: "Blue Blue",
+    name: "Perroquets",
+    price: 4000,
+    popularity: 1,
+    ingredients: [
+      { name: "Ricard", volume: 4 },
+      { name: "Sirop de menthe", volume: 1 },
+      { name: "Eau gazeuse", volume: 8 }
+    ]
+  },
+  {
+    name: "Mojito Bull",
     price: 8000,
     popularity: 1,
     ingredients: [
-      { name: "Rhum blanc", volume: 4.5 },
-      { name: "Triple sec", volume: 1.5 },
-      { name: "Blue de Curaçao", volume: 1.5 },
-      { name: "Liqueur de coco", volume: 1.5 },
-      { name: "Jus d’ananas", volume: 9 }
-    ]
-  },
-  {
-    name: "Gin Basil Smash",
-    price: 11000,
-    popularity: 1,
-    ingredients: [
-      { name: "Gin", volume: 6 },
-      { name: "Feuilles de basilic", volume: 8 },
+      { name: "Rhum blanc", volume: 5 },
       { name: "Jus de citron", volume: 3 },
-      { name: "Sirop de sucre", volume: 1 },
-      { name: "Sprite", volume: 6 }
+      { name: "Sirop de canne", volume: 1 },
+      { name: "Feuilles de menthe", volume: 6 },
+      { name: "Red Bull", volume: 6 }
     ]
   },
   {
-    name: "Gin Pin",
-    price: 11000,
+    name: "B52",
+    price: 5000,
     popularity: 1,
     ingredients: [
-      { name: "Gin", volume: 6 },
-      { name: "Jus de citron", volume: 3 },
-      { name: "Sirop de sucre", volume: 1 },
-      { name: "Jus d’ananas", volume: 6 }
-    ]
-  },
-  {
-    name: "Grape Capiroska",
-    price: 11000,
-    popularity: 1,
-    ingredients: [
-      { name: "Vodka", volume: 6 },
-      { name: "Jus de citron", volume: 3 },
-      { name: "Sirop de sucre", volume: 1 },
-      { name: "Sprite", volume: 6 }
-    ]
-  },
-  {
-    name: "Johnny Cocktail",
-    price: 11000,
-    popularity: 1,
-    ingredients: [
-      { name: "Gin", volume: 4.5 },
-      { name: "Triple sec", volume: 1.5 },
-      { name: "Ricard", volume: 1 }
-    ]
-  },
-  {
-    name: "Planter's Punch",
-    price: 11000,
-    popularity: 1,
-    ingredients: [
-      { name: "Rhum blanc", volume: 4.5 },
-      { name: "Jus d’orange", volume: 6 },
-      { name: "Jus d’ananas", volume: 6 },
-      { name: "Jus de citron", volume: 3 },
-      { name: "Triple sec", volume: 1.5 }
-    ]
-  },
-  {
-    name: "Long Island Ice Tea",
-    price: 11000,
-    popularity: 1,
-    ingredients: [
-      { name: "Gin", volume: 1.5 },
-      { name: "Tequila", volume: 1.5 },
-      { name: "Vodka", volume: 1.5 },
-      { name: "Triple sec", volume: 1.5 },
-      { name: "Rhum blanc", volume: 1.5 },
-      { name: "Jus de citron", volume: 3 },
-      { name: "Coca-Cola", volume: 5 }
-    ]
-  },
-  {
-    name: "Kir Royal",
-    price: 20000,
-    popularity: 1,
-    ingredients: [
-      { name: "Champagne", volume: 9 },
-      { name: "Crème de cassis", volume: 1 }
-    ]
-  },
-  {
-    name: "Kir Ordinaire",
-    price: 8000,
-    popularity: 1,
-    ingredients: [
-      { name: "Crème de cassis", volume: 1 },
-      { name: "Vin blanc", volume: 9 }
+      { name: "Bailey's", volume: 1 },
+      { name: "Liqueur de Kahlúa", volume: 1 },
+      { name: "Whisky", volume: 1 }
     ]
   }
 ];
 
-// ── Expose to window (browser) and module.exports (Node.js) ────
-if (typeof window !== 'undefined') {
-  window.cocktails = cocktails;
-  window.masterIngredients = masterIngredients;
-}
-
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { cocktails, masterIngredients };
 }
-

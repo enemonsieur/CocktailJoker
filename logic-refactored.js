@@ -12,6 +12,7 @@ const _ui = _isNode ? require('./ui-helpers') : window;
 const _stateMod = _isNode ? require('./state') : window;
 const _searchMod = _isNode ? require('./search-helpers') : window;
 const _pricingMod = _isNode ? require('./pricing-optimizer') : window;
+const _pricingModV2 = _isNode ? require('./pricing-optimizer-v2') : window;
 
 const {
   AppState: state,
@@ -39,6 +40,10 @@ const {
 const {
   buildPricingOptimizerResults: _buildPricingOptimizerResults,
 } = _pricingMod;
+
+const {
+  buildPricingOptimizerResultsV2: _buildPricingOptimizerResultsV2,
+} = _pricingModV2;
 
 const _cocktails = (typeof window !== 'undefined' && window.cocktails) ? window.cocktails : (typeof cocktails !== 'undefined' ? cocktails : []);
 const _masterIngredients = (typeof window !== 'undefined' && window.masterIngredients) ? window.masterIngredients : (typeof masterIngredients !== 'undefined' ? masterIngredients : {});
@@ -97,7 +102,7 @@ function renderCocktailSuggestions() {
       class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${index === stateUi.highlight ? 'bg-teal-50 text-teal-900' : 'text-slate-700 hover:bg-stone-50'}"
       onmousedown="selectCocktailSuggestionByIndex(${index})">
       <span>${item.label}</span>
-      <span class="text-xs text-stone-500">Popularite ${item.popularity || 0}/5</span>
+      <span class="text-xs text-stone-500">Popularité ${item.popularity || 0}/5</span>
     </button>
   `).join('');
 }
@@ -354,11 +359,11 @@ function renderCocktailList() {
           onkeydown="handleCocktailSearchKeydown(event)"
           onfocus="focusCocktailSearch()">
         <div id="cocktail-search-list" class="absolute left-0 right-0 top-full z-20 mt-1 hidden max-h-72 overflow-auto rounded-xl border border-stone-200 bg-white p-1 shadow-lg" role="listbox"></div>
-        <p class="mt-2 text-sm leading-6 text-stone-600">Tapez pour filtrer la liste, puis validez avec les fleches et la touche Entrer.</p>
+        <p class="mt-2 text-sm leading-6 text-stone-600">Tapez pour filtrer la liste, puis validez avec les flèches et la touche Entrée.</p>
       </div>
       <div class="flex lg:pt-8">
         <button type="button" onclick="addCustomCocktail()" class="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-stone-50 lg:w-auto">
-          Creer un cocktail personnalise
+          Créer un cocktail personnalisé
         </button>
       </div>
     </div>
@@ -398,8 +403,197 @@ function renderSelected() {
 }
 
 function toggleSalesErrors(show) {
-  dom.get('weekday-error')?.classList.toggle('hidden', !show);
-  dom.get('weekend-error')?.classList.toggle('hidden', !show);
+  dom.get('persons-error')?.classList.toggle('hidden', !show);
+  dom.get('attach-error')?.classList.toggle('hidden', !show);
+}
+
+function toggleAdvancedSales() {
+  const el = dom.get('advanced-sales');
+  if (!el) return;
+  el.classList.toggle('hidden');
+}
+
+// Auto-detect venue tier from average cocktail price.
+// >= 5500 FCFA average → haut de gamme, otherwise milieu de gamme.
+const TIER_THRESHOLD = 5500;
+
+function detectVenueTier(cocktails) {
+  if (!cocktails || !cocktails.length) return 'milieu';
+  const avgPrice = cocktails.reduce((sum, c) => sum + (c.price || 0), 0) / cocktails.length;
+  return avgPrice >= TIER_THRESHOLD ? 'haut' : 'milieu';
+}
+
+// buildVenueDiagnosis — replaces the old static BENCHMARKS / getBenchmarkVerdict.
+//
+// The old version compared monthly cocktail volume against abstract sector targets
+// and attach rate against universal norms. That framing was misleading in venues
+// where traffic is modest: it implied low volume was a direct failure, and steered
+// the advice toward "bring more customers" even when cocktail conversion was the
+// real bottleneck.
+//
+// This version reads the V2 optimizer context directly and separates:
+//   traffic (covers) · cocktail conversion (attach) · repeat intensity · resulting volume
+//
+// It draws on venueHealthBand, primaryBottleneck, and secondaryBottleneck that the
+// V2 optimizer already computes, so the diagnosis stays consistent with the algorithm.
+
+function buildVenueDiagnosis({
+  monthlyTotal,        // resulting cocktail volume (computed)
+  attachRate,          // % as entered by user (e.g. 10 for 10%)
+  personsPerWeek,
+  cocktailsPerBuyer,
+  venueType,
+  tier,
+  // V2 context — pulled from the first optimizer result item when available
+  venueHealthBand,
+  primaryBottleneck,
+  secondaryBottleneck,
+}) {
+  const venueLabel = { bar: 'bar', hotel_bar: 'bar d\'hôtel', restaurant: 'restaurant' }[venueType] || venueType;
+  const tierLabel = tier === 'haut' ? 'haut de gamme' : 'milieu de gamme';
+
+  // ── Traffic signal ────────────────────────────────────────────────
+  // We do not compare against a static cover target. We describe what
+  // we observe so the user can form their own judgment.
+  const monthlyCovers = personsPerWeek * 4;
+  let trafficSignal, trafficBadge;
+  if (primaryBottleneck === 'covers' && !secondaryBottleneck) {
+    trafficSignal = 'LIMITANT';
+    trafficBadge = 'bg-red-100 text-red-800';
+  } else if (primaryBottleneck === 'covers' || secondaryBottleneck === 'covers') {
+    trafficSignal = 'FAIBLE';
+    trafficBadge = 'bg-amber-100 text-amber-800';
+  } else {
+    trafficSignal = 'OK';
+    trafficBadge = 'bg-emerald-100 text-emerald-800';
+  }
+
+  // ── Conversion signal ─────────────────────────────────────────────
+  let conversionSignal, conversionBadge;
+  if (primaryBottleneck === 'attach_rate') {
+    conversionSignal = 'FAIBLE';
+    conversionBadge = 'bg-red-100 text-red-800';
+  } else if (secondaryBottleneck === 'attach_rate') {
+    conversionSignal = 'À SURVEILLER';
+    conversionBadge = 'bg-amber-100 text-amber-800';
+  } else {
+    conversionSignal = 'OK';
+    conversionBadge = 'bg-emerald-100 text-emerald-800';
+  }
+
+  // ── Repeat signal ─────────────────────────────────────────────────
+  let repeatSignal, repeatBadge;
+  if (primaryBottleneck === 'repeat_rate') {
+    repeatSignal = 'FAIBLE';
+    repeatBadge = 'bg-red-100 text-red-800';
+  } else if (secondaryBottleneck === 'repeat_rate') {
+    repeatSignal = 'À SURVEILLER';
+    repeatBadge = 'bg-amber-100 text-amber-800';
+  } else {
+    repeatSignal = 'OK';
+    repeatBadge = 'bg-emerald-100 text-emerald-800';
+  }
+
+  // ── Volume signal ─────────────────────────────────────────────────
+  // Volume is presented as a result of the three factors above, not as
+  // the primary grade. Badging follows overall venue health.
+  let volumeSignal, volumeBadge;
+  if (venueHealthBand === 'good') {
+    volumeSignal = 'BON';
+    volumeBadge = 'bg-emerald-100 text-emerald-800';
+  } else if (venueHealthBand === 'bad') {
+    volumeSignal = 'FAIBLE';
+    volumeBadge = 'bg-amber-100 text-amber-800';
+  } else {
+    volumeSignal = 'CRITIQUE';
+    volumeBadge = 'bg-red-100 text-red-800';
+  }
+
+  // ── Card border / background ──────────────────────────────────────
+  let cardBorder;
+  if (venueHealthBand === 'good') {
+    cardBorder = 'border-emerald-200 bg-emerald-50';
+  } else if (venueHealthBand === 'very_bad') {
+    cardBorder = 'border-red-200 bg-red-50';
+  } else {
+    cardBorder = 'border-amber-200 bg-amber-50';
+  }
+
+  // ── Diagnosis text ────────────────────────────────────────────────
+  // Written to match the copy direction in the ticket:
+  //   • honest and operational
+  //   • no universal attach-rate percentages
+  //   • weak-attach cases → conversion-first priority
+  //   • traffic mentioned only when it is genuinely the main limit
+  let diagnosisLines = [];
+
+  if (venueHealthBand === 'good') {
+    diagnosisLines.push(
+      'Votre bar présente une bonne dynamique cocktail pour ce positionnement.',
+      'Appliquez les ajustements de prix ci-dessous pour sécuriser et améliorer votre marge.'
+    );
+  } else if (primaryBottleneck === 'attach_rate') {
+    diagnosisLines.push(
+      `Le volume cocktail reste faible pour ce positionnement, mais il doit être lu avec votre trafic réel (${monthlyCovers.toLocaleString()} passages/mois estimés).`
+    );
+    if (secondaryBottleneck === 'covers') {
+      diagnosisLines.push(
+        'Le trafic est également limité, mais le point de friction principal reste la conversion cocktail : trop peu de clients présents choisissent un cocktail.'
+      );
+    } else {
+      diagnosisLines.push(
+        'Le point de friction principal est la conversion cocktail : trop peu de clients présents choisissent un cocktail.'
+      );
+    }
+    diagnosisLines.push(
+      'Priorité :\n1. rendre l\'offre cocktail plus accessible et plus lisible\n2. corriger les prix des cocktails à faible demande et très forte marge\n3. améliorer la conversion sur les clients déjà présents avant de raisonner en acquisition de trafic'
+    );
+  } else if (primaryBottleneck === 'covers') {
+    diagnosisLines.push(
+      `Le volume cocktail est limité principalement par le trafic (${monthlyCovers.toLocaleString()} passages/mois estimés).`
+    );
+    if (secondaryBottleneck === 'attach_rate') {
+      diagnosisLines.push(
+        'La conversion cocktail est également perfectible : travailler la carte et le positionnement prix peut aider à convertir davantage parmi les clients déjà présents.'
+      );
+    } else {
+      diagnosisLines.push(
+        'La conversion cocktail et la répétition d\'achat semblent correctes compte tenu du flux de clients.'
+      );
+    }
+    diagnosisLines.push(
+      'Appliquez les recommandations de prix pour optimiser la marge sur le volume actuel.'
+    );
+  } else if (primaryBottleneck === 'repeat_rate') {
+    diagnosisLines.push(
+      'Les clients qui commandent des cocktails en commandent peu par visite.',
+      'Travaillez l\'offre cocktail (lisibilité, format, prix) pour encourager les commandes additionnelles.',
+      'Appliquez les recommandations de prix pour améliorer la rentabilité sur chaque cocktail vendu.'
+    );
+  } else {
+    // balanced / unknown
+    diagnosisLines.push(
+      'Aucun point de friction dominant identifié.',
+      'Appliquez les recommandations de prix pour sécuriser la marge.'
+    );
+  }
+
+  const diagnosisText = diagnosisLines.join(' ');
+
+  return {
+    venueLabel,
+    tierLabel,
+    cardBorder,
+    monthlyCovers,
+    trafficSignal, trafficBadge,
+    conversionSignal, conversionBadge,
+    repeatSignal, repeatBadge,
+    volumeSignal, volumeBadge,
+    attachRate,
+    cocktailsPerBuyer,
+    monthlyTotal,
+    diagnosisText,
+  };
 }
 
 function getMarginStatusText(margin) {
@@ -412,242 +606,412 @@ function buildRecommendation(overallMargin, strongestCocktail, weakestCocktail, 
   const parts = [];
 
   if (weakestCocktail) {
-    parts.push(`A surveiller en premier: ${weakestCocktail.name} avec une marge de ${weakestCocktail.margin}%.`);
+    parts.push(`À surveiller en premier : ${weakestCocktail.name} avec une marge de ${weakestCocktail.margin} %.`);
   }
 
   if (dominantCocktail && dominantCocktail.revenueShare > _config.REVENUE_SHARE_HIGHLIGHT) {
-    parts.push(`${dominantCocktail.name} porte ${dominantCocktail.revenueShare.toFixed(1)}% du chiffre d'affaires estime.`);
+    parts.push(`${dominantCocktail.name} porte ${dominantCocktail.revenueShare.toFixed(1)} % du chiffre d'affaires estimé.`);
   }
 
   if (overallMargin > _config.OVERALL_MARGIN_HIGH) {
-    parts.push("Votre marge globale parait elevee. Quand les prix sont trop hauts, certains clients commandent moins souvent. Baisser legerement certains prix peut aider a vendre plus souvent et a augmenter le profit mensuel.");
+    parts.push("Votre marge globale paraît élevée. Quand les prix sont trop hauts, certains clients commandent moins souvent. Baisser légèrement certains prix peut aider à vendre plus souvent et à augmenter le profit mensuel.");
   } else if (overallMargin < _config.OVERALL_MARGIN_GOOD) {
-    parts.push('Votre marge globale parait faible. Revoyez les recettes ou les prix des cocktails les moins rentables.');
+    parts.push('Votre marge globale paraît faible. Revoyez les recettes ou les prix des cocktails les moins rentables.');
   } else {
-    parts.push('Votre marge globale reste dans une zone plutot saine pour piloter la carte.');
+    parts.push('Votre marge globale reste dans une zone plutôt saine pour piloter la carte.');
   }
 
   if (strongestCocktail) {
-    parts.push(`Point fort actuel: ${strongestCocktail.name} affiche ${strongestCocktail.margin}% de marge.`);
+    parts.push(`Point fort actuel : ${strongestCocktail.name} affiche ${strongestCocktail.margin} % de marge.`);
   }
 
   return parts.join(' ');
 }
 
+function starsHtml(popularity) {
+  const n = Math.max(1, Math.min(5, Math.round(popularity)));
+  return '★'.repeat(n) + '☆'.repeat(5 - n);
+}
+
+function formatNumber(value) {
+  return Math.round(value || 0).toLocaleString('fr-FR');
+}
+
+function formatCurrency(value) {
+  return `${formatNumber(value)} FCFA`;
+}
+
+function formatSignedNumber(value) {
+  const rounded = Math.round(value || 0);
+  return `${rounded > 0 ? '+' : ''}${rounded.toLocaleString('fr-FR')}`;
+}
+
+function formatSignedCurrency(value) {
+  return `${formatSignedNumber(value)} FCFA`;
+}
+
+function formatSignedPercent(value) {
+  const rounded = Math.round(value || 0);
+  return `${rounded > 0 ? '+' : ''}${rounded}%`;
+}
+
+function calculateMarginPercent(price, cost) {
+  if (!(price > 0)) return 0;
+  return Math.round((((price || 0) - (cost || 0)) / price) * 100);
+}
+
+function getMarginPillClass(margin) {
+  if (margin > _config.MARGIN_HIGH) return 'bg-teal-100 text-teal-800';
+  if (margin >= _config.MARGIN_GOOD) return 'bg-emerald-100 text-emerald-800';
+  return 'bg-orange-100 text-orange-800';
+}
+
+function renderMarginPill(margin, status = '') {
+  return `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${getMarginPillClass(margin)}">${margin}%${status ? ` <span class="ml-1 font-normal opacity-70">${status}</span>` : ''}</span>`;
+}
+
+function getDeltaTone(value, positiveClass = 'text-emerald-700', negativeClass = 'text-red-600', neutralClass = 'text-stone-500') {
+  if (value > 0) return positiveClass;
+  if (value < 0) return negativeClass;
+  return neutralClass;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RÉSUMÉ DE LA CARTE : tableau cocktail par cocktail (coût / prix / marge / ventes / CA / profit)
+// Affiché AVANT la barre de profit et le rebalancement
+// ─────────────────────────────────────────────────────────────────────────────
+function buildMenuSummaryTable(cocktails, totalRevenue, totalProfit) {
+  if (!cocktails || cocktails.length === 0) return '';
+
+  const totalMonthlySales = cocktails.reduce((s, c) => s + (c.estimatedMonthlySales || 0), 0);
+  const totalEstRevenue   = cocktails.reduce((s, c) => s + (c.estimatedRevenue || 0), 0);
+  const totalEstProfit    = cocktails.reduce((s, c) => s + (c.estimatedProfit || 0), 0);
+  const overallMargin     = totalEstRevenue > 0 ? Math.round((totalEstProfit / totalEstRevenue) * 100) : 0;
+
+  const rows = cocktails.map((c, idx) => {
+    const bgClass = idx % 2 === 0 ? 'bg-white' : 'bg-stone-50';
+    const revenueShareBar = Math.round(c.revenueShare || 0);
+    return `
+      <tr class="${bgClass}">
+        <td class="px-4 py-3 text-sm font-medium text-slate-900">
+          ${c.name}
+          <span class="ml-1 text-amber-500 text-xs">${starsHtml(c.popularity)}</span>
+        </td>
+        <td class="px-4 py-3 text-sm text-stone-600 tabular-nums">${formatCurrency(c.cost)}</td>
+        <td class="px-4 py-3 text-sm font-semibold text-slate-900 tabular-nums">${formatCurrency(c.price)}</td>
+        <td class="px-4 py-3 text-sm">${renderMarginPill(Math.round(c.margin), c.marginStatus)}</td>
+        <td class="px-4 py-3 text-sm tabular-nums text-slate-700">${c.estimatedMonthlySales || 0}</td>
+        <td class="px-4 py-3 text-sm tabular-nums text-slate-700">${formatCurrency(c.estimatedRevenue || 0)}</td>
+        <td class="px-4 py-3 text-sm font-semibold tabular-nums text-emerald-700">${formatCurrency(c.estimatedProfit || 0)}</td>
+        <td class="px-4 py-3">
+          <div class="flex items-center gap-2">
+            <div class="h-1.5 rounded-full bg-teal-500" style="width:${Math.max(2, revenueShareBar)}%"></div>
+            <span class="text-xs text-stone-500 tabular-nums">${revenueShareBar}%</span>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  return `
+    <section class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm" aria-labelledby="menu-resume-title">
+      <h3 id="menu-resume-title" class="text-lg font-bold text-slate-900">Résumé de votre carte</h3>
+      <p class="mt-1 text-sm leading-6 text-stone-600">Coût, prix, marge et contribution estimée de chaque cocktail — avant toute optimisation.</p>
+
+      <div class="mt-4 overflow-x-auto">
+        <table class="min-w-full overflow-hidden rounded-xl text-left">
+          <thead class="bg-stone-100">
+            <tr>
+              <th class="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Cocktail</th>
+              <th class="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Coût / verre</th>
+              <th class="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Prix vente</th>
+              <th class="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Marge</th>
+              <th class="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Ventes / mois</th>
+              <th class="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">CA mensuel</th>
+              <th class="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Profit mensuel</th>
+              <th class="px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Part CA</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-stone-100">
+            ${rows}
+          </tbody>
+          <tfoot class="bg-stone-100">
+            <tr>
+              <td class="px-4 py-3 text-sm font-bold text-slate-900" colspan="4">TOTAL (${cocktails.length} cocktails)</td>
+              <td class="px-4 py-3 text-sm font-bold tabular-nums text-slate-900">${totalMonthlySales}</td>
+              <td class="px-4 py-3 text-sm font-bold tabular-nums text-slate-900">${formatCurrency(totalEstRevenue)}</td>
+              <td class="px-4 py-3 text-sm font-bold tabular-nums text-emerald-700">${formatCurrency(totalEstProfit)}</td>
+              <td class="px-4 py-3 text-sm font-semibold text-stone-600">Marge moy. ${overallMargin}%</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>`;
+}
+
+// Profit bar: before/after visual per SUMMARY_SECTION_MOCKUP
+function buildProfitBar(profitBefore, profitAfter, gain, gainPct) {
+  if (!profitBefore && !profitAfter) return '';
+
+  const conservativeGain = gain * 0.76;
+  const baseGain = gain;
+  const aggressiveGain = gain * 1.25;
+
+  const safeProfitBefore = Math.max(1, Math.abs(profitBefore));
+  const maxScenarioGain = Math.max(Math.abs(conservativeGain), Math.abs(baseGain), Math.abs(aggressiveGain), 1);
+  const scenarioTrackWidth = 100;
+  const conservativeWidthPct = Math.max(12, Math.round((Math.abs(conservativeGain) / maxScenarioGain) * scenarioTrackWidth));
+  const baseWidthPct = Math.max(12, Math.round((Math.abs(baseGain) / maxScenarioGain) * scenarioTrackWidth));
+  const aggressiveWidthPct = Math.max(12, Math.round((Math.abs(aggressiveGain) / maxScenarioGain) * scenarioTrackWidth));
+  const gainColor = gain >= 0 ? 'var(--success)' : 'var(--danger)';
+
+  return `
+    <div class="profit-impact">
+      <div class="profit-impact-header">
+        <h3 class="profit-title">Impact mensuel estimé après ajustements</h3>
+        <div class="profit-primary-value" style="color:${gainColor};">${formatSignedCurrency(gain)} <span style="color:${gainColor};">(${formatSignedPercent(gainPct)})</span></div>
+        <p class="profit-summary-line">Profit mensuel estimé : ${formatCurrency(profitBefore)} <span aria-hidden="true">→</span> ${formatCurrency(profitAfter)}</p>
+      </div>
+
+      <div class="profit-scenarios" aria-label="Fourchette probable d'impact mensuel">
+        <div class="profit-scenarios-heading">
+          <h4>Fourchette probable</h4>
+          <p>Hypothèse : vous appliquez les nouveaux prix suggérés.</p>
+        </div>
+
+        <div class="scenario-list">
+          <div class="scenario-row">
+            <div class="scenario-copy">
+              <span class="scenario-label">Prudent</span>
+              <span class="scenario-value">${formatSignedCurrency(conservativeGain)}</span>
+            </div>
+            <div class="scenario-meter" aria-hidden="true">
+              <div class="scenario-meter-fill" style="width: ${conservativeWidthPct}%;"></div>
+            </div>
+            <div class="scenario-percent">${formatSignedPercent((conservativeGain / safeProfitBefore) * 100)}</div>
+          </div>
+
+          <div class="scenario-row scenario-row-active">
+            <div class="scenario-copy">
+              <span class="scenario-label">Attendu</span>
+              <span class="scenario-value">${formatSignedCurrency(baseGain)}</span>
+            </div>
+            <div class="scenario-meter" aria-hidden="true">
+              <div class="scenario-meter-fill scenario-meter-fill-active" style="width: ${baseWidthPct}%;"></div>
+            </div>
+            <div class="scenario-percent">${formatSignedPercent(gainPct)}</div>
+          </div>
+
+          <div class="scenario-row">
+            <div class="scenario-copy">
+              <span class="scenario-label">Haut</span>
+              <span class="scenario-value">${formatSignedCurrency(aggressiveGain)}</span>
+            </div>
+            <div class="scenario-meter" aria-hidden="true">
+              <div class="scenario-meter-fill" style="width: ${aggressiveWidthPct}%;"></div>
+            </div>
+            <div class="scenario-percent">${formatSignedPercent((aggressiveGain / safeProfitBefore) * 100)}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// Details block (collapsible) — one sentence per cocktail
+function buildOptimizerDetails(results) {
+  return results
+    .filter(r => r.status === 'ok')
+    .map(r => {
+      const currentProfit = r.currentProfit ?? Math.round((r.currentPrice - r.cost) * (r.estimatedMonthlySales || 0));
+      const conservativeProfit = r.scenarios?.conservative?.monthlyIngredientProfit ?? currentProfit;
+      const baseProfit = r.estimatedRecommendedProfit ?? r.scenarios?.base?.monthlyIngredientProfit ?? currentProfit;
+      const aggressiveProfit = r.scenarios?.aggressive?.monthlyIngredientProfit ?? baseProfit;
+      const profitDelta = baseProfit - currentProfit;
+      return `
+        <div class="rounded-xl border border-stone-200 bg-stone-50 p-4">
+          <div class="font-semibold text-slate-900">${r.name} ${starsHtml(r.popularity)} — ${formatSignedCurrency(profitDelta)}</div>
+          <p class="mt-1 text-sm leading-6 text-stone-700">${r.reasonFr}</p>
+          <div class="mt-2 text-xs text-stone-500">
+            Prudent : ${formatCurrency(conservativeProfit)} ·
+            Base : ${formatCurrency(baseProfit)} ·
+            Agressif : ${formatCurrency(aggressiveProfit)}
+          </div>
+        </div>`;
+    }).join('');
+}
+
+// Main table rows — before/after view for price, margin and monthly impact.
 function buildOptimizerRows(results) {
-  return results.map(result => {
+  const sorted = [...results].sort((a, b) => {
+    const currentProfitA = a.currentProfit ?? Math.round(((a.currentPrice || 0) - (a.cost || 0)) * (a.estimatedMonthlySales || 0));
+    const currentProfitB = b.currentProfit ?? Math.round(((b.currentPrice || 0) - (b.cost || 0)) * (b.estimatedMonthlySales || 0));
+    const profitA = a.status === 'ok' ? (a.estimatedRecommendedProfit ?? a.scenarios?.base?.monthlyIngredientProfit ?? currentProfitA) - currentProfitA : -Infinity;
+    const profitB = b.status === 'ok' ? (b.estimatedRecommendedProfit ?? b.scenarios?.base?.monthlyIngredientProfit ?? currentProfitB) - currentProfitB : -Infinity;
+    return profitB - profitA;
+  });
+
+  return sorted.map(result => {
     if (result.status === 'warning') {
       return `
         <tr class="bg-amber-50">
-          <td class="px-4 py-4 text-sm font-semibold text-slate-900">${result.name}</td>
-          <td class="px-4 py-4 text-sm text-stone-600" colspan="7">${result.warning}</td>
+          <td class="px-4 py-4 text-sm font-semibold text-slate-900" colspan="7">${result.name} — ${result.warning}</td>
         </tr>`;
     }
 
-    const deltaTone = result.priceDeltaValue > 0
-      ? 'text-amber-700'
-      : result.priceDeltaValue < 0
-        ? 'text-teal-700'
-        : 'text-slate-700';
-    const actionTone = result.recommendedAction === 'Augmenter un peu'
-      ? 'bg-amber-100 text-amber-900'
-      : result.recommendedAction === 'Augmenter ou revoir'
-        ? 'bg-rose-100 text-rose-900'
-        : result.recommendedAction.includes('Baisser')
-          ? 'bg-teal-100 text-teal-900'
-          : 'bg-stone-100 text-slate-800';
-
-    const shortReason = result.menuClass === 'Plow Horse'
-      ? 'Bon volume, marge faible.'
-      : result.menuClass === 'Puzzle'
-        ? 'Bonne marge, traction faible.'
-        : result.menuClass === 'Dog'
-          ? 'Faible traction et faible marge.'
-          : 'Cocktail globalement sain.';
+    const currentOrders = result.estimatedMonthlySales || 0;
+    const baseOrders    = result.estimatedRecommendedSales ?? result.scenarios?.base?.monthlyOrders ?? currentOrders;
+    const orderDelta    = Math.round(baseOrders - currentOrders);
+    const currentProfit = result.currentProfit ?? Math.round(((result.currentPrice || 0) - (result.cost || 0)) * currentOrders);
+    const profitAfter   = result.estimatedRecommendedProfit ?? result.scenarios?.base?.monthlyIngredientProfit ?? currentProfit;
+    const profitDelta   = Math.round(profitAfter - currentProfit);
+    const priceChanged  = result.suggestedPrice !== result.currentPrice;
+    const currentMargin = Math.round(result.marginPercent ?? calculateMarginPercent(result.currentPrice, result.cost));
+    const newMargin = calculateMarginPercent(result.suggestedPrice ?? result.currentPrice, result.cost);
+    const orderColor = getDeltaTone(orderDelta);
+    const profitColor = getDeltaTone(profitDelta, 'text-emerald-700', 'text-red-600', 'text-stone-500');
+    const rowBg = profitDelta > 0
+      ? 'bg-emerald-50 hover:bg-emerald-100'
+      : profitDelta === 0 && !priceChanged
+        ? 'bg-stone-50 hover:bg-stone-100'
+        : 'hover:bg-stone-50';
 
     return `
-      <tr class="align-top hover:bg-stone-50">
-        <td class="px-4 py-4 text-sm font-semibold text-slate-900">${result.name}</td>
-        <td class="px-4 py-4 text-sm text-slate-700">${result.currentPrice} FCFA</td>
-        <td class="px-4 py-4 text-sm text-slate-700">${Math.round(result.cost)} FCFA</td>
+      <tr class="align-middle ${rowBg}">
         <td class="px-4 py-4 text-sm">
-          <div class="font-semibold ${_colors.getMarginColor(result.marginPercent)}">${result.marginPercent}%</div>
-          <div class="text-xs text-stone-500">${result.menuClass} · ${result.sensitivityBand}</div>
-        </td>
-        <td class="px-4 py-4 text-sm">
-          <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ${actionTone}">${result.recommendedAction}</span>
-        </td>
-        <td class="px-4 py-4 text-sm font-semibold text-slate-900">${result.suggestedPrice} FCFA</td>
-        <td class="px-4 py-4 text-sm ${deltaTone}">${result.priceDeltaValue > 0 ? '+' : ''}${result.priceDeltaValue} FCFA</td>
-        <td class="px-4 py-4 text-sm text-stone-700">
-          <div class="font-medium text-slate-800">${shortReason}</div>
-          <div class="mt-1 text-xs text-stone-500">${result.expectedProfitDirection} · ${result.expectedDemandDirection}</div>
-          <div class="mt-1 text-xs font-medium ${result.estimatedOrderDelta > 0 ? 'text-teal-700' : result.estimatedOrderDelta < 0 ? 'text-amber-700' : 'text-stone-500'}">
-            Commandes/mois ${result.estimatedOrderDelta > 0 ? '+' : ''}${Math.round(result.estimatedOrderDelta * 100)}% · ${result.estimatedMonthlySales} -> ${result.estimatedRecommendedSales}
+          <div class="font-semibold text-slate-900">${result.name}</div>
+          <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-stone-500">
+            <span class="text-amber-500">${starsHtml(result.popularity)}</span>
+            <span>${result.reasonFr}</span>
           </div>
-          <details class="mt-2">
-            <summary class="cursor-pointer text-xs font-semibold text-teal-700">Pourquoi ?</summary>
-            <div class="mt-2 max-w-[24rem] text-xs leading-5 text-stone-600">${result.reasonFr}</div>
-          </details>
+        </td>
+        <td class="px-4 py-4 text-sm tabular-nums text-stone-700">
+          ${formatCurrency(result.currentPrice)}
+        </td>
+        <td class="px-4 py-4 text-sm tabular-nums font-semibold ${priceChanged ? 'text-teal-700' : 'text-stone-400'}">
+          ${formatCurrency(priceChanged ? result.suggestedPrice : result.currentPrice)}
+        </td>
+        <td class="px-4 py-4 text-sm">
+          ${renderMarginPill(currentMargin)}
+        </td>
+        <td class="px-4 py-4 text-sm">
+          ${renderMarginPill(newMargin, priceChanged ? '' : 'Identique')}
+        </td>
+        <td class="px-4 py-4 text-sm">
+          <div class="grid gap-1">
+            <div class="flex items-center justify-between gap-3 text-stone-500">
+              <span class="text-xs uppercase tracking-wide">Actuel</span>
+              <span class="font-medium text-slate-700">${formatNumber(currentOrders)}</span>
+            </div>
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-xs uppercase tracking-wide text-stone-500">Après</span>
+              <span class="font-semibold ${orderColor}">${formatNumber(baseOrders)}</span>
+            </div>
+            <div class="text-xs font-semibold ${orderColor}">
+              ${orderDelta === 0 ? 'Aucun changement estimé' : `Δ ${formatSignedNumber(orderDelta)} commandes`}
+            </div>
+          </div>
+        </td>
+        <td class="px-4 py-4 text-sm">
+          <div class="grid gap-1">
+            <div class="flex items-center justify-between gap-3 text-stone-500">
+              <span class="text-xs uppercase tracking-wide">Actuel</span>
+              <span class="font-medium text-slate-700">${formatCurrency(currentProfit)}</span>
+            </div>
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-xs uppercase tracking-wide text-stone-500">Après</span>
+              <span class="font-semibold ${profitColor}">${formatCurrency(profitAfter)}</span>
+            </div>
+            <div class="text-xs font-semibold ${profitColor}">
+              ${profitDelta === 0 ? 'Aucun gain estimé' : `Δ ${formatSignedCurrency(profitDelta)}`}
+            </div>
+          </div>
         </td>
       </tr>`;
   }).join('');
 }
 
-function buildGainCurveCard(result) {
-  if (result.status === 'warning') return '';
-  const profits = result.gainCurve.map(point => point.profit);
-  const maxProfit = Math.max(...profits, 1);
-  const width = 220;
-  const height = 64;
-  const points = result.gainCurve.map((point, index) => {
-    const x = index * (width / (result.gainCurve.length - 1 || 1));
-    const y = height - ((point.profit / maxProfit) * (height - 8)) - 4;
-    return { ...point, x, y };
-  });
-  const polyline = points.map(point => `${point.x},${point.y}`).join(' ');
-
-  return `
-    <article class="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
-      <div class="flex items-start justify-between gap-3">
-        <div>
-          <h4 class="text-sm font-semibold text-slate-900">${result.name}</h4>
-          <p class="mt-1 text-xs leading-5 text-stone-600">Petit repere visuel du profit mensuel estime entre le prix actuel, le prix recommande et une borne de test prudente.</p>
-        </div>
-        <div class="rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold text-slate-700">${result.menuClass}</div>
-      </div>
-      <svg class="mt-4 h-20 w-full" viewBox="0 0 220 72" role="img" aria-label="Courbe simple des gains estimes pour ${result.name}">
-        <polyline fill="none" stroke="#0f766e" stroke-width="3" points="${polyline}" />
-        ${points.map(point => `<circle cx="${point.x}" cy="${point.y}" r="4" fill="#f59e0b"></circle>`).join('')}
-      </svg>
-      <div class="mt-3 grid gap-2 sm:grid-cols-3">
-        ${result.gainCurve.map(point => `
-          <div class="rounded-lg bg-stone-50 p-3">
-            <div class="text-xs font-semibold uppercase tracking-wide text-stone-500">${point.label}</div>
-            <div class="mt-1 text-sm font-semibold text-slate-900">${point.price} FCFA</div>
-            <div class="mt-1 text-xs text-stone-600">${Math.round(point.profit).toLocaleString()} FCFA de profit estime</div>
-          </div>`).join('')}
-      </div>
-    </article>`;
-}
-
+// buildMenuGainSummary is replaced by buildProfitBar + buildOptimizerDetails above.
+// Kept as no-op stub to avoid errors if called from old cached code.
 function buildMenuGainSummary(results) {
   const validResults = results.filter(result => result.status === 'ok');
   if (!validResults.length) return '';
 
   const currentOrders = validResults.reduce((sum, result) => sum + result.estimatedMonthlySales, 0);
-  const recommendedOrders = validResults.reduce((sum, result) => sum + (result.estimatedRecommendedSales || result.estimatedMonthlySales), 0);
+  const conservativeOrders = validResults.reduce((sum, result) => sum + (result.scenarios?.conservative?.monthlyOrders || result.estimatedMonthlySales), 0);
+  const baseOrders = validResults.reduce((sum, result) => sum + (result.scenarios?.base?.monthlyOrders || result.estimatedMonthlySales), 0);
+  const aggressiveOrders = validResults.reduce((sum, result) => sum + (result.scenarios?.aggressive?.monthlyOrders || result.estimatedMonthlySales), 0);
   const currentRevenue = validResults.reduce((sum, result) => sum + (result.currentPrice * result.estimatedMonthlySales), 0);
-  const recommendedRevenue = validResults.reduce((sum, result) => sum + (result.estimatedRecommendedRevenue || (result.suggestedPrice * result.estimatedRecommendedSales)), 0);
+  const conservativeRevenue = validResults.reduce((sum, result) => sum + (result.scenarios?.conservative?.monthlyRevenue || (result.suggestedPrice * result.estimatedMonthlySales)), 0);
+  const baseRevenue = validResults.reduce((sum, result) => sum + (result.scenarios?.base?.monthlyRevenue || (result.suggestedPrice * result.estimatedMonthlySales)), 0);
+  const aggressiveRevenue = validResults.reduce((sum, result) => sum + (result.scenarios?.aggressive?.monthlyRevenue || (result.suggestedPrice * result.estimatedMonthlySales)), 0);
   const currentProfit = validResults.reduce((sum, result) => sum + result.currentProfit, 0);
-  const recommendedProfit = validResults.reduce((sum, result) => sum + result.estimatedRecommendedProfit, 0);
-  const deltaOrders = Math.round(recommendedOrders - currentOrders);
-  const deltaRevenue = Math.round(recommendedRevenue - currentRevenue);
-  const deltaProfit = Math.round(recommendedProfit - currentProfit);
-  const orderDeltaPct = currentOrders > 0 ? ((recommendedOrders - currentOrders) / currentOrders) * 100 : 0;
-  const revenueDeltaPct = currentRevenue > 0 ? ((recommendedRevenue - currentRevenue) / currentRevenue) * 100 : 0;
-  const profitDeltaPct = currentProfit > 0 ? ((recommendedProfit - currentProfit) / currentProfit) * 100 : 0;
+  const conservativeProfit = validResults.reduce((sum, result) => sum + (result.scenarios?.conservative?.monthlyIngredientProfit || result.currentProfit), 0);
+  const baseProfit = validResults.reduce((sum, result) => sum + (result.scenarios?.base?.monthlyIngredientProfit || result.currentProfit), 0);
+  const aggressiveProfit = validResults.reduce((sum, result) => sum + (result.scenarios?.aggressive?.monthlyIngredientProfit || result.currentProfit), 0);
+  const deltaOrders = Math.round(baseOrders - currentOrders);
+  const deltaOrdersAggressive = Math.round(aggressiveOrders - currentOrders);
+  const deltaOrdersConservative = Math.round(conservativeOrders - currentOrders);
+  const deltaRevenue = Math.round(baseRevenue - currentRevenue);
+  const deltaRevenueAggressive = Math.round(aggressiveRevenue - currentRevenue);
+  const deltaRevenueConservative = Math.round(conservativeRevenue - currentRevenue);
+  const deltaProfit = Math.round(baseProfit - currentProfit);
+  const deltaProfitAggressive = Math.round(aggressiveProfit - currentProfit);
+  const deltaProfitConservative = Math.round(conservativeProfit - currentProfit);
+  const profitDeltaTone = deltaProfit > 0 ? 'text-emerald-700' : deltaProfit < 0 ? 'text-amber-700' : 'text-stone-500';
   const summaryTone = deltaProfit > 0 ? 'bg-emerald-50 text-emerald-900' : deltaProfit < 0 ? 'bg-amber-50 text-amber-900' : 'bg-stone-100 text-slate-700';
-  const orderDeltaTone = deltaOrders > 0 ? 'text-teal-700' : deltaOrders < 0 ? 'text-amber-700' : 'text-slate-700';
-  const revenueDeltaTone = deltaRevenue > 0 ? 'text-amber-700' : deltaRevenue < 0 ? 'text-rose-700' : 'text-slate-700';
-  const profitDeltaTone = deltaProfit > 0 ? 'text-emerald-700' : deltaProfit < 0 ? 'text-amber-700' : 'text-slate-700';
-  const summaryText = deltaOrders > 0 && deltaProfit > 0
-    ? 'La recommandation combine ici deux effets attendus: davantage de commandes et plus de profit ingredient.'
-    : deltaOrders <= 0 && deltaProfit > 0
-      ? 'Ici, le levier principal vient surtout du meilleur prix moyen et du profit unitaire, pas d\'une hausse de volume.'
-      : deltaOrders > 0 && deltaProfit <= 0
-        ? 'Ici, la priorite est plutot de relancer le volume. Le profit se lit donc avec prudence.'
-        : 'Sur cette selection, le moteur suggere peu de mouvements utiles a grande echelle.';
+  const summaryText = deltaOrdersAggressive > deltaOrders
+    ? "Le scénario agressif explore une demande plus sensible. Le scénario base reste la lecture principale pour piloter la carte."
+    : "Le scénario base reste la meilleure lecture pour arbitrer les prix; l'agressif sert uniquement de test de sensibilité.";
   const metrics = [
-    { label: 'Commandes/mois', before: currentOrders, after: recommendedOrders, delta: deltaOrders, accent: '#0f766e', formatter: value => `${Math.round(value).toLocaleString()}` },
-    { label: 'CA mensuel', before: currentRevenue, after: recommendedRevenue, delta: deltaRevenue, accent: '#f59e0b', formatter: value => `${Math.round(value).toLocaleString()} FCFA` },
-    { label: 'Profit ingredient', before: currentProfit, after: recommendedProfit, delta: deltaProfit, accent: '#2563eb', formatter: value => `${Math.round(value).toLocaleString()} FCFA` },
+    { label: 'Commandes / mois', current: currentOrders, conservative: conservativeOrders, base: baseOrders, aggressive: aggressiveOrders, formatter: value => `${Math.round(value).toLocaleString()}` },
+    { label: 'CA mensuel', current: currentRevenue, conservative: conservativeRevenue, base: baseRevenue, aggressive: aggressiveRevenue, formatter: value => `${Math.round(value).toLocaleString()} FCFA` },
+    { label: 'Profit ingredient', current: currentProfit, conservative: conservativeProfit, base: baseProfit, aggressive: aggressiveProfit, formatter: value => `${Math.round(value).toLocaleString()} FCFA` },
   ];
-  const figureMax = Math.max(...metrics.flatMap(metric => [metric.before, metric.after]), 1);
-  const figureRows = metrics.map((metric, index) => {
-    const y = 50 + (index * 78);
-    const beforeX = 190 + ((metric.before / figureMax) * 290);
-    const afterX = 190 + ((metric.after / figureMax) * 290);
-    const deltaSuffix = metric.label === 'Commandes/mois' ? '' : ' FCFA';
-    const chipX = Math.min(beforeX, afterX) + (Math.abs(afterX - beforeX) / 2) - 55;
-
+  const figureMax = Math.max(...metrics.flatMap(metric => [metric.current, metric.conservative, metric.base, metric.aggressive]), 1);
+  const metricCard = (label, value, currentValue, tone, isBase = false) => {
+    const delta = value - currentValue;
+    const width = Math.max(8, Math.round((value / figureMax) * 100));
     return `
-      <g>
-        <text x="16" y="${y - 12}" fill="#334155" font-size="13" font-weight="700">${metric.label}</text>
-        <text x="16" y="${y + 10}" fill="#78716c" font-size="12">${metric.formatter(metric.before)}</text>
-        <line x1="${beforeX}" y1="${y}" x2="${afterX}" y2="${y}" stroke="${metric.accent}" stroke-width="8" stroke-linecap="round" opacity="0.28"></line>
-        <circle cx="${beforeX}" cy="${y}" r="9" fill="#ffffff" stroke="${metric.accent}" stroke-width="3"></circle>
-        <circle cx="${afterX}" cy="${y}" r="9" fill="${metric.accent}"></circle>
-        <text x="${beforeX}" y="${y - 18}" text-anchor="middle" fill="#64748b" font-size="11" font-weight="700">Aujourd'hui</text>
-        <text x="${afterX}" y="${y - 18}" text-anchor="middle" fill="#0f172a" font-size="11" font-weight="700">Apres</text>
-        <text x="${afterX + 16}" y="${y + 5}" fill="#0f172a" font-size="12" font-weight="700">${metric.formatter(metric.after)}</text>
-        <rect x="${chipX}" y="${y + 15}" width="110" height="22" rx="999" ry="999" fill="#ffffff" stroke="#e2e8f0"></rect>
-        <text x="${chipX + 55}" y="${y + 30}" text-anchor="middle" fill="${metric.delta >= 0 ? '#047857' : '#b45309'}" font-size="11" font-weight="700">${metric.delta >= 0 ? '+' : ''}${Math.round(metric.delta).toLocaleString()}${deltaSuffix}</text>
-      </g>`;
-  }).join('');
+      <div class="rounded-xl border ${isBase ? 'border-emerald-300 bg-emerald-50' : 'border-stone-200 bg-white'} p-3">
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-sm font-semibold ${isBase ? 'text-emerald-900' : 'text-slate-800'}">${label}</span>
+          <span class="text-xs font-semibold ${tone}">${delta >= 0 ? '+' : ''}${Math.round(delta).toLocaleString()}</span>
+        </div>
+        <div class="mt-2 h-2 rounded-full bg-stone-100">
+          <div class="h-2 rounded-full ${isBase ? 'bg-emerald-500' : tone === 'text-amber-700' ? 'bg-amber-500' : 'bg-slate-400'}" style="width:${width}%"></div>
+        </div>
+        <div class="mt-2 text-lg font-black text-slate-900">${value.toLocaleString()}</div>
+      </div>`;
+  };
 
   return `
     <section class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm" aria-labelledby="menu-gain-title">
       <div class="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h4 id="menu-gain-title" class="text-xl font-bold text-slate-900">Impact estime sur l'ensemble du bar</h4>
-          <p class="mt-1 max-w-3xl text-sm leading-6 text-stone-600">Avant / apres, rien de plus. Le visuel compare seulement les commandes estimees, le chiffre d'affaires mensuel et le profit ingredient du bar.</p>
+          <p class="mt-1 max-w-3xl text-sm leading-6 text-stone-600">Le visuel compare les trois scénarios en mensuel sur les commandes, le chiffre d'affaires et le profit ingredient. La lecture base est la reference principale.</p>
         </div>
         <div class="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide ${summaryTone}">
-          Commandes ${deltaOrders >= 0 ? '+' : ''}${deltaOrders.toLocaleString()} · Profit ${deltaProfit >= 0 ? '+' : ''}${deltaProfit.toLocaleString()} FCFA
+          Base commandes ${deltaOrders >= 0 ? '+' : ''}${deltaOrders.toLocaleString()} · Base profit ${deltaProfit >= 0 ? '+' : ''}${deltaProfit.toLocaleString()} FCFA
         </div>
       </div>
 
-      <div class="mt-5 grid gap-5 xl:grid-cols-[1.45fr_0.55fr]">
-        <div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-          <svg class="h-[290px] w-full" viewBox="0 0 520 220" role="img" aria-label="Comparaison avant apres des commandes, du chiffre d'affaires et du profit ingredient du bar">
-            <text x="190" y="24" fill="#64748b" font-size="12" font-weight="700">Aujourd'hui</text>
-            <text x="430" y="24" fill="#0f172a" font-size="12" font-weight="700">Apres ajustement</text>
-            <line x1="190" y1="32" x2="480" y2="32" stroke="#e7e5e4" stroke-width="2" stroke-dasharray="4 4"></line>
-            ${figureRows}
-          </svg>
-        </div>
-
-        <div class="space-y-3">
-          <div class="rounded-2xl border border-stone-200 bg-white p-4">
-            <div class="text-xs font-semibold uppercase tracking-wide text-stone-500">Aujourd'hui</div>
-            <div class="mt-3 text-2xl font-black text-slate-900">${Math.round(currentOrders).toLocaleString()}</div>
-            <div class="text-xs text-stone-500">Commandes estimees / mois</div>
-            <div class="mt-4 text-xl font-bold text-slate-900">${Math.round(currentRevenue).toLocaleString()} FCFA</div>
-            <div class="text-xs text-stone-500">CA mensuel estime</div>
-            <div class="mt-4 text-xl font-bold text-slate-900">${Math.round(currentProfit).toLocaleString()} FCFA</div>
-            <div class="text-xs text-stone-500">Profit ingredient estime</div>
-          </div>
-
-          <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-            <div class="text-xs font-semibold uppercase tracking-wide text-emerald-800">Apres ajustement</div>
-            <div class="mt-3 text-2xl font-black text-slate-900">${Math.round(recommendedOrders).toLocaleString()}</div>
-            <div class="text-xs text-emerald-900">Commandes estimees / mois</div>
-            <div class="mt-4 text-xl font-bold text-slate-900">${Math.round(recommendedRevenue).toLocaleString()} FCFA</div>
-            <div class="text-xs text-emerald-900">CA mensuel estime</div>
-            <div class="mt-4 text-xl font-bold text-slate-900">${Math.round(recommendedProfit).toLocaleString()} FCFA</div>
-            <div class="text-xs text-emerald-900">Profit ingredient estime</div>
-          </div>
-
-          <div class="rounded-2xl border border-stone-200 bg-white p-4">
-            <div class="text-xs font-semibold uppercase tracking-wide text-stone-500">Variation attendue</div>
-            <div class="mt-3 space-y-2 text-sm">
-              <div class="flex items-center justify-between gap-3">
-                <span class="text-stone-600">Commandes</span>
-                <span class="font-semibold ${orderDeltaTone}">${deltaOrders >= 0 ? '+' : ''}${deltaOrders.toLocaleString()} (${orderDeltaPct >= 0 ? '+' : ''}${orderDeltaPct.toFixed(1)}%)</span>
-              </div>
-              <div class="flex items-center justify-between gap-3">
-                <span class="text-stone-600">CA</span>
-                <span class="font-semibold ${revenueDeltaTone}">${deltaRevenue >= 0 ? '+' : ''}${deltaRevenue.toLocaleString()} FCFA (${revenueDeltaPct >= 0 ? '+' : ''}${revenueDeltaPct.toFixed(1)}%)</span>
-              </div>
-              <div class="flex items-center justify-between gap-3">
-                <span class="text-stone-600">Profit ingredient</span>
-                <span class="font-semibold ${profitDeltaTone}">${deltaProfit >= 0 ? '+' : ''}${deltaProfit.toLocaleString()} FCFA (${profitDeltaPct >= 0 ? '+' : ''}${profitDeltaPct.toFixed(1)}%)</span>
-              </div>
+      <div class="mt-5 space-y-4">
+        ${metrics.map(metric => `
+          <div class="grid gap-3 md:grid-cols-[160px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+            <div class="rounded-xl border border-stone-200 bg-stone-50 p-3">
+              <div class="text-sm font-semibold text-slate-900">${metric.label}</div>
+              <div class="mt-1 text-xs text-stone-500">Estimation mensuelle</div>
             </div>
-            <p class="mt-4 text-sm leading-6 text-stone-700">${summaryText}</p>
+            ${metricCard("Aujourd'hui", metric.current, metric.current, 'text-slate-500')}
+            ${metricCard('Base', metric.base, metric.current, 'text-emerald-700', true)}
+            ${metricCard('Agressif', metric.aggressive, metric.current, 'text-amber-700')}
           </div>
-        </div>
+        `).join('')}
+      </div>
+
+      <div class="mt-5 rounded-2xl border border-stone-200 bg-stone-50 p-4">
+        <p class="text-sm leading-6 text-stone-700">${summaryText}</p>
+        <p class="mt-2 text-xs font-semibold uppercase tracking-wide text-stone-500">Estimation scenario-based. Les chiffres sont des ordres de grandeur, pas une certitude.</p>
       </div>
     </section>`;
 }
@@ -655,28 +1019,33 @@ function buildMenuGainSummary(results) {
 function generateMenu() {
   const container = dom.get('menu-summary');
   if (!container) {
-    _msg("Erreur: impossible d'afficher le resume du menu.", 'error');
+    _msg("Erreur : impossible d'afficher le résumé du menu.", 'error');
     return;
   }
 
   if (state.selected.length === 0) {
-    container.innerHTML = "<p class='text-center text-gray-500 italic py-4'>Aucun cocktail selectionne.</p>";
+    container.innerHTML = "<p class='text-center text-gray-500 italic py-4'>Aucun cocktail sélectionné.</p>";
     return;
   }
 
-  const weekend = +(dom.get('weekend-input')?.value) || 0;
-  const weekday = +(dom.get('weekday-input')?.value) || 0;
+  const personsPerWeek = +(dom.get('persons-per-week-input')?.value) || 0;
+  const attachRatePct  = +(dom.get('attach-rate-input')?.value) || 0;
+  const cocktailsPerBuyer = +(dom.get('cocktails-per-buyer-input')?.value) || 1.3;
+  const venueType = dom.get('venue-type-input')?.value || 'bar';
 
-  if (!weekend && !weekday) {
+  if (!personsPerWeek || !attachRatePct) {
     toggleSalesErrors(true);
-    _msg('Indiquez vos ventes en semaine ou le week-end pour generer un resume utile.', 'error');
+    _msg('Indiquez le nombre de clients par semaine et le pourcentage qui commandent un cocktail.', 'error');
     return;
   }
   toggleSalesErrors(false);
 
-  const weeklyTotal = weekend * _config.WEEKEND_DAYS + weekday * _config.WEEKDAY_DAYS;
-  const monthlyTotal = weeklyTotal * _config.WEEKS_PER_MONTH;
-  const manualRevenue = parseInt(dom.get('gross-revenue-input')?.value || '0', 10) || 0;
+  // Volume mensuel = personnes/sem × 4 × taux% × cocktails/acheteur
+  const monthlyPersons  = personsPerWeek * 4;
+  const monthlyBuyers   = monthlyPersons * (attachRatePct / 100);
+  const monthlyTotal    = Math.round(monthlyBuyers * cocktailsPerBuyer);
+  const attachRate      = attachRatePct; // keep as % for benchmark
+  const manualRevenue   = 0; // removed from UI; kept for backward-compat in export
 
   const summary = { cocktails: [] };
   state.selected.forEach(cocktail => {
@@ -718,106 +1087,114 @@ function generateMenu() {
   });
 
   const overallMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
-  const marginColor = _colors.getMarginColor(Math.round(overallMargin));
-  const strongestCocktail = [...summary.cocktails].sort((a, b) => b.margin - a.margin)[0];
-  const weakestCocktail = [...summary.cocktails].sort((a, b) => a.margin - b.margin)[0];
-  const dominantCocktail = [...summary.cocktails].sort((a, b) => b.revenueShare - a.revenueShare)[0];
-  const recommendation = buildRecommendation(overallMargin, strongestCocktail, weakestCocktail, dominantCocktail);
-  const optimizerResults = _buildPricingOptimizerResults(summary.cocktails);
-  const menuGainSummary = buildMenuGainSummary(optimizerResults);
+  const tier = detectVenueTier(summary.cocktails);
+
+  // Use V2 optimizer with venue context for aggressive demand recovery
+  // V2 factors in weak attach-rate and weak demand to apply larger price cuts
+  const monthlyCovers = personsPerWeek * 4;
+  const cocktailsPerBuyerVal = cocktailsPerBuyer;
+  const optimizerResults = _buildPricingOptimizerResultsV2(summary.cocktails, {
+    venueType,
+    monthlyCovers,
+    cocktailAttachRate: attachRatePct / 100,
+    avgCocktailsPerBuyer: cocktailsPerBuyerVal,
+    monthlyCocktails: monthlyTotal,
+    sourceLabels: ['cameroon', 'live-app'],
+    competitorBenchmarks: [],
+  });
+
+  // Pull V2 venue context from the first valid result item for the diagnosis card.
+  // The V2 optimizer attaches venueHealthBand, bottleneck, and secondaryBottleneck
+  // to every result; all items share the same venue context so any one is sufficient.
+  const firstV2 = optimizerResults.find(r => r.status === 'ok') || {};
+  const diag = buildVenueDiagnosis({
+    monthlyTotal,
+    attachRate,
+    personsPerWeek,
+    cocktailsPerBuyer,
+    venueType,
+    tier,
+    venueHealthBand:      firstV2.venueHealthBand      || 'bad',
+    primaryBottleneck:    firstV2.bottleneck            || 'balanced',
+    secondaryBottleneck:  firstV2.secondaryBottleneck   || null,
+  });
+
+  // Totals for profit bar
+  // V2 optimizer returns estimatedRecommendedProfit directly (not in scenarios.base)
+  const totalProfitAfter = optimizerResults
+    .filter(r => r.status === 'ok')
+    .reduce((sum, r) => sum + (r.estimatedRecommendedProfit || r.scenarios?.base?.monthlyIngredientProfit || 0), 0);
+  // Current profit = (current price - cost) × estimated monthly sales
+  const totalProfitBefore = optimizerResults
+    .filter(r => r.status === 'ok')
+    .reduce((sum, r) => sum + ((r.currentPrice - r.cost) * r.estimatedMonthlySales || 0), 0);
+  const totalProfitGain = Math.round(totalProfitAfter - totalProfitBefore);
+  const totalProfitGainPct = totalProfitBefore > 0
+    ? Math.round((totalProfitGain / totalProfitBefore) * 100)
+    : 0;
 
   container.innerHTML = `
-    <div class="space-y-4">
-      <div class="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-      <div class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h3 class="text-2xl font-bold text-slate-900">Tableau de pilotage du menu</h3>
-            <p class="mt-1 text-sm leading-6 text-stone-600">Utilisez ce resume pour repere les cocktails les plus utiles et ceux a ajuster.</p>
+    <div class="space-y-5">
+
+      <!-- DIAGNOSTIC VENUE : trafic / conversion / répétition / volume -->
+      <section class="rounded-2xl border ${diag.cardBorder} p-5 shadow-sm" aria-labelledby="benchmark-title">
+        <h3 id="benchmark-title" class="text-lg font-bold text-slate-900">Diagnostic — ${diag.venueLabel} ${diag.tierLabel}</h3>
+        <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="rounded-xl bg-white/80 p-4">
+            <div class="text-xs font-semibold uppercase tracking-wide text-stone-500">Trafic mensuel</div>
+            <div class="mt-1 flex items-baseline gap-2">
+              <span class="text-2xl font-bold text-slate-900">${diag.monthlyCovers.toLocaleString()}</span>
+              <span class="rounded-full px-2 py-0.5 text-xs font-bold ${diag.trafficBadge}">${diag.trafficSignal}</span>
+            </div>
+            <div class="mt-1 text-xs text-stone-500">passages estimés / mois</div>
           </div>
-          <div class="rounded-full bg-stone-100 px-4 py-2 text-sm font-semibold text-slate-700">
-            Marge globale <span class="${marginColor}">${Math.round(overallMargin)}%</span>
+          <div class="rounded-xl bg-white/80 p-4">
+            <div class="text-xs font-semibold uppercase tracking-wide text-stone-500">Conversion cocktail</div>
+            <div class="mt-1 flex items-baseline gap-2">
+              <span class="text-2xl font-bold text-slate-900">${diag.attachRate}%</span>
+              <span class="rounded-full px-2 py-0.5 text-xs font-bold ${diag.conversionBadge}">${diag.conversionSignal}</span>
+            </div>
+            <div class="mt-1 text-xs text-stone-500">des clients choisissent un cocktail (repère directionnel, dépend du profil client)</div>
+          </div>
+          <div class="rounded-xl bg-white/80 p-4">
+            <div class="text-xs font-semibold uppercase tracking-wide text-stone-500">Intensité de répétition</div>
+            <div class="mt-1 flex items-baseline gap-2">
+              <span class="text-2xl font-bold text-slate-900">${diag.cocktailsPerBuyer.toFixed(1)}</span>
+              <span class="rounded-full px-2 py-0.5 text-xs font-bold ${diag.repeatBadge}">${diag.repeatSignal}</span>
+            </div>
+            <div class="mt-1 text-xs text-stone-500">cocktails / acheteur par visite</div>
+          </div>
+          <div class="rounded-xl bg-white/80 p-4">
+            <div class="text-xs font-semibold uppercase tracking-wide text-stone-500">Volume cocktail résultant</div>
+            <div class="mt-1 flex items-baseline gap-2">
+              <span class="text-2xl font-bold text-slate-900">${diag.monthlyTotal.toLocaleString()}</span>
+              <span class="rounded-full px-2 py-0.5 text-xs font-bold ${diag.volumeBadge}">${diag.volumeSignal}</span>
+            </div>
+            <div class="mt-1 text-xs text-stone-500">cocktails vendus / mois (résultat des 3 facteurs ci-dessus)</div>
           </div>
         </div>
+        <p class="mt-4 text-sm font-medium leading-6 text-slate-800" style="white-space: pre-line;">${diag.diagnosisText}</p>
+      </section>
+
+      <!-- RÉSUMÉ DE LA CARTE : coût / prix / marge / ventes / CA / profit par cocktail -->
+      ${buildMenuSummaryTable(summary.cocktails, totalRevenue, totalProfit)}
+
+      <!-- TABLEAU PRINCIPAL : mockup-driven -->
+      <section class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm" aria-labelledby="rebalance-title">
+        <h3 id="rebalance-title" class="text-2xl font-bold text-slate-900">Rebalancement du menu</h3>
+        <p class="mt-1 text-sm leading-6 text-stone-600">Trié par impact sur le profit. Le tableau montre l'ancien prix, le nouveau prix, l'ancienne marge, la nouvelle marge et l'impact mensuel estimé.</p>
 
         <div class="mt-5 overflow-x-auto">
           <table class="min-w-full overflow-hidden rounded-xl">
             <thead class="bg-stone-100">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Cocktail</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Prix</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Marge</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Popularite</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Poids dans le CA</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-stone-100 bg-white">
-              ${summary.cocktails.map(c => {
-                const mc = _colors.getMarginColor(c.margin);
-                return `
-                  <tr class="hover:bg-stone-50">
-                    <td class="px-4 py-4 text-sm font-semibold text-slate-900">${c.name}</td>
-                    <td class="px-4 py-4 text-sm text-slate-700">${Math.round(c.price)} FCFA</td>
-                    <td class="px-4 py-4 text-sm">
-                      <div class="font-semibold ${mc}">${c.margin}%</div>
-                      <div class="text-xs text-stone-500">${c.marginStatus} Â· Cout ${Math.round(c.cost)} FCFA</div>
-                    </td>
-                    <td class="px-4 py-4 text-sm text-slate-700" title="${_tooltip(c.popularity, c.margin)}">${c.popularity}/5</td>
-                    <td class="px-4 py-4 text-sm ${c.revenueShare > _config.REVENUE_SHARE_HIGHLIGHT ? 'text-emerald-700 font-semibold' : 'text-slate-700'}">${c.revenueShare.toFixed(1)}%</td>
-                  </tr>`;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="space-y-4">
-        <div id="monthly-summary" class="rounded-2xl border border-stone-200 bg-amber-50 p-5 shadow-sm">
-          <h3 class="text-lg font-bold text-slate-900">Vue mensuelle</h3>
-          <div class="mt-4 grid gap-3">
-            <div class="rounded-xl bg-white/80 p-4">
-              <div class="text-xs font-semibold uppercase tracking-wide text-stone-500">Cocktails vendus par mois</div>
-              <div class="mt-1 text-2xl font-bold text-slate-900">${monthlyTotal}</div>
-            </div>
-            <div class="rounded-xl bg-white/80 p-4">
-              <div class="text-xs font-semibold uppercase tracking-wide text-stone-500">Chiffre d'affaires mensuel estime</div>
-              <div class="mt-1 text-2xl font-bold text-slate-900">${Math.round(manualRevenue > 0 ? manualRevenue : totalRevenue).toLocaleString()} FCFA</div>
-            </div>
-            <div class="rounded-xl bg-white/80 p-4">
-              <div class="text-xs font-semibold uppercase tracking-wide text-stone-500">Profit mensuel estime</div>
-              <div class="mt-1 text-2xl font-bold text-slate-900">${Math.round(totalProfit).toLocaleString()} FCFA</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-          <h3 class="text-lg font-bold text-slate-900">Lecture rapide</h3>
-          <p class="mt-3 text-sm leading-7 text-stone-700">${recommendation}</p>
-        </div>
-      </div>
-      </div>
-
-      <section class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm" aria-labelledby="optimizer-title">
-        <div class="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h3 id="optimizer-title" class="text-2xl font-bold text-slate-900">Recommandations de reequilibrage</h3>
-            <p class="mt-1 max-w-3xl text-sm leading-6 text-stone-600">Le moteur part du cout ingredient, de la popularite et de la place de chaque cocktail sur la carte. Les ajustements restent prudents pour ne pas casser la perception client.</p>
-          </div>
-          <div class="rounded-full bg-stone-100 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-stone-600">Popularite = indicateur simple de sensibilite au prix</div>
-        </div>
-
-        <div class="mt-5 overflow-x-auto">
-          <table class="min-w-full overflow-hidden rounded-xl">
-            <thead class="bg-stone-100">
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Cocktail</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Prix actuel</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Cout</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Marge</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Action</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Prix suggere</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Ecart</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Lecture</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Cocktail (demande)</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Ancien prix</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Nouveau prix</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Ancienne marge</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Nouvelle marge</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Impact commandes</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">Impact profit</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-stone-100 bg-white">
@@ -826,14 +1203,18 @@ function generateMenu() {
           </table>
         </div>
 
-        <div class="mt-5 rounded-xl border border-dashed border-stone-300 bg-stone-50 p-4 text-sm leading-6 text-stone-700">
-          Le tableau reste la source principale de decision. Le repere visuel ci-dessous montre seulement l'effet cumule estime sur l'ensemble du bar.
-        </div>
+        ${buildProfitBar(totalProfitBefore, totalProfitAfter, totalProfitGain, totalProfitGainPct)}
 
         <div class="mt-5">
-          ${menuGainSummary}
+          <button type="button" onclick="this.nextElementSibling.classList.toggle('hidden'); this.textContent = this.nextElementSibling.classList.contains('hidden') ? 'Voir les raisons de chaque recommandation' : 'Masquer les raisons';" class="text-sm font-semibold text-teal-700 underline underline-offset-2 hover:text-teal-900">
+            Voir les raisons de chaque recommandation
+          </button>
+          <div class="hidden mt-4 space-y-3">
+            ${buildOptimizerDetails(optimizerResults)}
+          </div>
         </div>
       </section>
+
     </div>`;
 
   dom.get('summary-step')?.classList.remove('hidden');
@@ -848,12 +1229,13 @@ async function exportMenu() {
   btn.innerHTML = '<span class="loading">Enregistrement...</span>';
 
   try {
-    if (!state.selected.length) throw new Error('Selectionnez au moins un cocktail.');
+    if (!state.selected.length) throw new Error('Sélectionnez au moins un cocktail.');
 
-    const weekEnd = +(dom.get('weekend-input')?.value) || 0;
-    const weekDay = +(dom.get('weekday-input')?.value) || 0;
-    const grossRev = +(dom.get('gross-revenue-input')?.value) || 0;
-    const monthlyCocktails = weekEnd * _config.WEEKEND_DAYS + weekDay * _config.WEEKDAY_DAYS;
+    const personsWeek   = +(dom.get('persons-per-week-input')?.value) || 0;
+    const attachPct     = +(dom.get('attach-rate-input')?.value) || 0;
+    const cPerBuyer     = +(dom.get('cocktails-per-buyer-input')?.value) || 1.3;
+    const grossRev      = 0;
+    const monthlyCocktails = Math.round(personsWeek * 4 * (attachPct / 100) * cPerBuyer);
 
     const rows = state.selected.map(c => {
       const cost = _calcCost(c, _masterIngredients);
@@ -887,7 +1269,7 @@ async function exportMenu() {
       code,
       payload: {
         cocktails: rows,
-        meta: { ...totals, grossRevenue: grossRev, weekdaySales: weekDay, weekendSales: weekEnd, monthlyCocktails },
+        meta: { ...totals, grossRevenue: grossRev, personsPerWeek: personsWeek, attachRatePct: attachPct, cocktailsPerBuyer: cPerBuyer, monthlyCocktails },
         timestamp: new Date().toISOString(),
       },
     };
@@ -899,7 +1281,7 @@ async function exportMenu() {
     });
     if (!resp.ok) throw new Error(`Erreur serveur (${resp.status})`);
 
-    _msg(`Analyse sauvegardee. Code: ${code}`, 'success');
+    _msg(`Analyse sauvegardée. Code : ${code}`, 'success');
     setTimeout(() => {
       window.open(`https://wa.me/${_config.WHATSAPP_NUMBER}?text=Votre%20code%20${code}`, '_blank');
     }, _config.WHATSAPP_REDIRECT_DELAY);
@@ -952,6 +1334,7 @@ if (typeof window !== 'undefined') {
   window.startApp = startApp;
   window.exportMenu = exportMenu;
   window.generateMenu = generateMenu;
+  window.toggleAdvancedSales = toggleAdvancedSales;
   window.addCocktail = addCocktail;
   window.addCustomCocktail = addCustomCocktail;
   window.removeCocktail = removeCocktail;
@@ -1002,4 +1385,3 @@ if (typeof module !== 'undefined') {
     __getState: () => state,
   };
 }
-

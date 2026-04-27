@@ -15,6 +15,23 @@ const DOM = {
   },
 };
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function buildInfoTooltip(message, label = 'Informations complémentaires') {
+  return `
+    <span class="info-tooltip" tabindex="0" aria-label="${escapeHtml(label)}">
+      <span class="info-tooltip__icon" aria-hidden="true">i</span>
+      <span class="info-tooltip__content" role="tooltip">${escapeHtml(message)}</span>
+    </span>`;
+}
+
 function createButton({ text, className, onClick, title = '', innerHTML = null }) {
   const btn = document.createElement('button');
   btn.className = className;
@@ -34,9 +51,9 @@ function createCocktailButton(name, isActive, onClick) {
     : { COLORS: window.COLORS };
 
   return createButton({
-    text: `${isActive ? 'Selectionne' : 'Ajouter'} ${name}`,
+    text: `${isActive ? 'Sélectionné' : 'Ajouter'} ${name}`,
     className: `font-bold py-3 px-4 rounded-xl m-1 transition-colors duration-150 border border-transparent ${COLORS.getButtonState(isActive)}`,
-    title: 'Selectionnez un cocktail a analyser',
+    title: 'Sélectionnez un cocktail à analyser',
     onClick,
   });
 }
@@ -83,26 +100,26 @@ function buildUnitSelect(selectedUnit, onchange) {
     options: [
       { value: 'cl', label: 'cl' },
       { value: 'g', label: 'g' },
-      { value: 'piece', label: 'piece' },
+      { value: 'piece', label: 'pièce' },
     ],
     selectedValue: selectedUnit,
     onchange,
     className: 'rounded-lg border border-stone-300 px-3 py-2',
-    ariaLabel: "Unite de service de l'ingredient",
+    ariaLabel: "Unité de service de l'ingrédient",
   });
 }
 
 function buildBuyUnitSelect(selectedUnit, onchange) {
   return buildSelect({
     options: [
-      { value: 'liter', label: 'liter' },
+      { value: 'liter', label: 'L' },
       { value: 'g', label: 'g' },
-      { value: 'piece', label: 'piece' },
+      { value: 'piece', label: 'pièce' },
     ],
     selectedValue: selectedUnit,
     onchange,
     className: 'rounded-lg border border-stone-300 px-3 py-2',
-    ariaLabel: "Unite d'achat de l'ingredient",
+    ariaLabel: "Unité d'achat de l'ingrédient",
   });
 }
 
@@ -114,7 +131,7 @@ function buildIngredientRow(cocktailIdx, ingIdx, ingredient, ingInfo) {
   return `
     <div class="grid gap-3 rounded-xl border border-stone-200 bg-white p-3 md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,2fr)_auto]">
       <div>
-        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500" for="${prefix}-name">Ingredient</label>
+        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500" for="${prefix}-name">Ingrédient</label>
         <div class="relative">
         ${buildAutocompleteTextInput({
           value: ingredient.name,
@@ -123,9 +140,9 @@ function buildIngredientRow(cocktailIdx, ingIdx, ingredient, ingInfo) {
           onfocus: `handleIngredientNameFocus(${cocktailIdx}, ${ingIdx}, this.value)`,
           onblur: `handleIngredientNameBlur(${cocktailIdx}, ${ingIdx})`,
           className: 'w-full rounded-lg border border-stone-300 px-3 py-2',
-          title: "Nom de l'ingredient",
+          title: "Nom de l'ingrédient",
           id: `${prefix}-name`,
-          ariaLabel: `Nom de l'ingredient ${ingIdx + 1} du cocktail ${cocktailIdx + 1}`,
+          ariaLabel: `Nom de l'ingrédient ${ingIdx + 1} du cocktail ${cocktailIdx + 1}`,
           controls: listId,
         })}
           <div id="${listId}" class="absolute left-0 right-0 top-full z-20 mt-1 hidden max-h-56 overflow-auto rounded-xl border border-stone-200 bg-white p-1 shadow-lg" role="listbox"></div>
@@ -140,17 +157,20 @@ function buildIngredientRow(cocktailIdx, ingIdx, ingredient, ingInfo) {
             step: 0.1,
             onchange: `updateIngredient(${cocktailIdx}, ${ingIdx}, 'volume', parseFloat(this.value))`,
             className: 'w-full rounded-lg border border-stone-300 px-3 py-2',
-            title: 'Quantite utilisee dans un verre',
+            title: 'Quantité utilisée dans un verre',
             id: `${prefix}-volume`,
             min: 0,
-            ariaLabel: `Volume de l'ingredient ${ingIdx + 1} du cocktail ${cocktailIdx + 1}`,
+            ariaLabel: `Volume de l'ingrédient ${ingIdx + 1} du cocktail ${cocktailIdx + 1}`,
           })}
           ${buildUnitSelect(info.unitServed, `updateIngredientUnitServed(${cocktailIdx}, ${ingIdx}, this.value)`)}
         </div>
       </div>
 
       <div>
-        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500" for="${prefix}-price">Achat ingredient</label>
+        <label class="mb-1 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-stone-500" for="${prefix}-price">
+          Achat ingrédient
+          ${buildInfoTooltip("Entrez le prix d'achat et la quantité totale achetée pour fiabiliser le coût par verre.", "Aide sur l'achat ingrédient")}
+        </label>
         <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)]">
           ${buildNumberInput({
             value: info.price,
@@ -160,25 +180,24 @@ function buildIngredientRow(cocktailIdx, ingIdx, ingredient, ingInfo) {
             title: "Prix d'achat",
             id: `${prefix}-price`,
             min: 0,
-            ariaLabel: `Prix d'achat de l'ingredient ${ingIdx + 1} du cocktail ${cocktailIdx + 1}`,
+            ariaLabel: `Prix d'achat de l'ingrédient ${ingIdx + 1} du cocktail ${cocktailIdx + 1}`,
           })}
           ${buildNumberInput({
             value: info.buyVolume,
             step: 0.01,
             onchange: `updateIngredientMasterData('${ingredient.name}', 'buyVolume', this.value)`,
             className: 'w-full rounded-lg border border-stone-300 px-3 py-2',
-            title: "Quantite achetee",
+            title: "Quantité achetée",
             id: `${prefix}-buy-volume`,
             min: 0,
-            ariaLabel: `Quantite achetee de l'ingredient ${ingIdx + 1} du cocktail ${cocktailIdx + 1}`,
+            ariaLabel: `Quantité achetée de l'ingrédient ${ingIdx + 1} du cocktail ${cocktailIdx + 1}`,
           })}
           ${buildBuyUnitSelect(info.buyUnit, `updateIngredientMasterData('${ingredient.name}', 'buyUnit', this.value)`)}
         </div>
-        <p class="mt-2 text-xs leading-5 text-stone-500">Entrez le prix d'achat et la quantite totale achetee pour fiabiliser le cout par verre.</p>
       </div>
 
       <div class="flex items-start justify-end">
-        <button onclick="removeIngredient(${cocktailIdx}, ${ingIdx})" class="rounded-lg px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50" title="Supprimer cet ingredient" aria-label="Supprimer l'ingredient ${ingredient.name || ingIdx + 1}">
+        <button onclick="removeIngredient(${cocktailIdx}, ${ingIdx})" class="rounded-lg px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50" title="Supprimer cet ingrédient" aria-label="Supprimer l'ingrédient ${ingredient.name || ingIdx + 1}">
           Supprimer
         </button>
       </div>
@@ -186,6 +205,8 @@ function buildIngredientRow(cocktailIdx, ingIdx, ingredient, ingInfo) {
 }
 
 function buildCocktailCard(cocktail, index, totalCost, marginPercent, marginColor, ingredientRows) {
+  const ingredientCount = cocktail.ingredients.length;
+  const ingredientCountLabel = `${ingredientCount} ingrédient${ingredientCount > 1 ? 's' : ''}`;
   const marginLabel = marginPercent >= 75 && marginPercent <= 90
     ? 'Marge saine'
     : marginPercent > 90
@@ -196,7 +217,7 @@ function buildCocktailCard(cocktail, index, totalCost, marginPercent, marginColo
     <article class="bg-white rounded-[20px] p-4 mb-4 border border-stone-200 shadow-sm sm:p-5" aria-labelledby="cocktail-title-${index}">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div class="min-w-0 flex-1">
-          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">Identite du cocktail</p>
+          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">Identité du cocktail</p>
           <label class="sr-only" for="cocktail-name-${index}">Nom du cocktail</label>
           ${buildTextInput({
             value: cocktail.name,
@@ -206,31 +227,44 @@ function buildCocktailCard(cocktail, index, totalCost, marginPercent, marginColo
             ariaLabel: `Nom du cocktail ${index + 1}`,
           })}
         </div>
-        <button onclick="removeCocktail(${index})" class="rounded-lg px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50" title="Supprimer ce cocktail de votre selection" aria-label="Supprimer le cocktail ${cocktail.name || index + 1}">
+        <button onclick="removeCocktail(${index})" class="rounded-lg px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50" title="Supprimer ce cocktail de votre sélection" aria-label="Supprimer le cocktail ${cocktail.name || index + 1}">
           Retirer
         </button>
       </div>
 
       <section class="mt-4" aria-labelledby="ingredients-title-${index}">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h3 id="ingredients-title-${index}" class="text-sm font-semibold uppercase tracking-[0.16em] text-stone-500">Ingredients</h3>
-            <p class="mt-1 text-sm leading-6 text-stone-600">Verifiez les quantites et les achats. Les calculs se mettent a jour automatiquement.</p>
+        <details class="recipe-expander rounded-2xl border border-stone-200 bg-stone-50">
+          <summary class="recipe-expander__summary">
+            <div>
+              <h3 id="ingredients-title-${index}" class="text-sm font-semibold uppercase tracking-[0.16em] text-stone-500">Recette et achats</h3>
+              <p class="mt-1 text-sm leading-6 text-stone-600">${ingredientCountLabel}. Ouvrez pour modifier la recette et les achats.</p>
+            </div>
+            <span class="recipe-expander__chevron" aria-hidden="true">
+              <i class="fa-solid fa-chevron-down"></i>
+            </span>
+          </summary>
+          <div class="recipe-expander__body">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <p class="text-sm leading-6 text-stone-600">Vérifiez les quantités et les achats. Les calculs se mettent à jour automatiquement.</p>
+              <button onclick="addNewIngredient(${index})" class="text-sm font-semibold text-teal-700 hover:text-teal-800" title="Ajoutez un nouvel ingrédient à ce cocktail">
+                + Ajouter un ingrédient
+              </button>
+            </div>
+            <div id="ingredients-${index}" class="mt-4 space-y-3">
+              ${ingredientRows}
+            </div>
           </div>
-          <button onclick="addNewIngredient(${index})" class="text-sm font-semibold text-teal-700 hover:text-teal-800" title="Ajoutez un nouvel ingredient a ce cocktail">
-            + Ajouter un ingredient
-          </button>
-        </div>
-        <div id="ingredients-${index}" class="mt-4 space-y-3">
-          ${ingredientRows}
-        </div>
+        </details>
       </section>
 
       <section class="mt-5" aria-labelledby="pricing-title-${index}">
-        <h3 id="pricing-title-${index}" class="text-sm font-semibold uppercase tracking-[0.16em] text-stone-500">Prix et popularite</h3>
+        <h3 id="pricing-title-${index}" class="text-sm font-semibold uppercase tracking-[0.16em] text-stone-500">Prix et popularité</h3>
         <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label class="mb-1 block text-sm font-semibold text-slate-900" for="cocktail-price-${index}">Prix de vente (FCFA)</label>
+            <label class="mb-1 inline-flex items-center gap-2 text-sm font-semibold text-slate-900" for="cocktail-price-${index}">
+              Prix de vente (FCFA)
+              ${buildInfoTooltip("Entrez le prix réellement affiché à la carte.", "Aide sur le prix de vente")}
+            </label>
             ${buildNumberInput({
               value: cocktail.price,
               onchange: `updateCocktailPrice(${index}, parseInt(this.value))`,
@@ -239,26 +273,27 @@ function buildCocktailCard(cocktail, index, totalCost, marginPercent, marginColo
               min: 0,
               ariaLabel: `Prix de vente du cocktail ${index + 1}`,
             })}
-            <p class="mt-2 text-xs leading-5 text-stone-500">Entrez le prix reellement affiche a la carte.</p>
           </div>
           <div>
-            <label class="mb-1 block text-sm font-semibold text-slate-900" for="cocktail-popularity-${index}">Popularite (1 a 5)</label>
-            <p class="mb-2 text-xs leading-5 text-stone-500">1 = rarement commande, 5 = tres souvent commande.</p>
+            <label class="mb-1 inline-flex items-center gap-2 text-sm font-semibold text-slate-900" for="cocktail-popularity-${index}">
+              Popularité (1 à 5)
+              ${buildInfoTooltip("1 = rarement commandé, 5 = très souvent commandé.", "Aide sur la popularité")}
+            </label>
             <input type="number" min="1" max="5" value="${cocktail.popularity}"
-                 title="Popularite du cocktail"
+                 title="Popularité du cocktail"
                  onchange="updateCocktailPopularity(${index}, parseInt(this.value))"
                  id="cocktail-popularity-${index}"
-                 aria-label="Popularite du cocktail ${index + 1}"
+                 aria-label="Popularité du cocktail ${index + 1}"
                  class="w-full rounded-xl border border-stone-300 px-3 py-3">
           </div>
         </div>
       </section>
 
       <section class="mt-5 border-t border-stone-200 pt-4" aria-labelledby="profitability-title-${index}">
-        <h3 id="profitability-title-${index}" class="text-sm font-semibold uppercase tracking-[0.16em] text-stone-500">Rentabilite</h3>
+        <h3 id="profitability-title-${index}" class="text-sm font-semibold uppercase tracking-[0.16em] text-stone-500">Rentabilité</h3>
         <div class="mt-3 grid gap-3 sm:grid-cols-3">
           <div class="rounded-xl bg-stone-50 p-3">
-            <p class="text-xs font-semibold uppercase tracking-wide text-stone-500">Cout par verre</p>
+            <p class="text-xs font-semibold uppercase tracking-wide text-stone-500">Coût par verre</p>
             <p class="mt-1 text-lg font-bold text-slate-900"><span class="cost-amount">${Math.round(totalCost)}</span> FCFA</p>
           </div>
           <div class="rounded-xl bg-stone-50 p-3">
@@ -266,7 +301,7 @@ function buildCocktailCard(cocktail, index, totalCost, marginPercent, marginColo
             <p class="mt-1 text-lg font-bold text-slate-900">${Math.round(cocktail.price)} FCFA</p>
           </div>
           <div class="rounded-xl bg-stone-50 p-3">
-            <p class="text-xs font-semibold uppercase tracking-wide text-stone-500">Marge estimee</p>
+            <p class="text-xs font-semibold uppercase tracking-wide text-stone-500">Marge estimée</p>
             <p class="mt-1 text-lg font-bold ${marginColor}"><span class="margin-percentage">${marginPercent}</span>%</p>
             <p class="mt-1 text-xs text-stone-600">${marginLabel}</p>
           </div>
@@ -308,6 +343,7 @@ if (typeof window !== 'undefined') {
   window.buildSelect = buildSelect;
   window.buildUnitSelect = buildUnitSelect;
   window.buildBuyUnitSelect = buildBuyUnitSelect;
+  window.buildInfoTooltip = buildInfoTooltip;
   window.buildIngredientRow = buildIngredientRow;
   window.buildCocktailCard = buildCocktailCard;
   window.displayMessage = displayMessage;
@@ -326,6 +362,7 @@ if (typeof module !== 'undefined') {
     buildSelect,
     buildUnitSelect,
     buildBuyUnitSelect,
+    buildInfoTooltip,
     buildIngredientRow,
     buildCocktailCard,
     displayMessage,

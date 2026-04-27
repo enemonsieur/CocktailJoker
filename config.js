@@ -12,6 +12,8 @@ const CONFIG = {
   MARGIN_TARGET_LOW: 75,
   MARGIN_TARGET_HIGH: 85,
   MARGIN_VERY_HIGH: 90,
+  DEMAND_SHIFT_FACTOR_BASE: 2.3,
+  DEMAND_SHIFT_FACTOR_RECOVERY: 2.8,
 
   OVERALL_MARGIN_HIGH: 88,
   OVERALL_MARGIN_GOOD: 75,
@@ -45,7 +47,7 @@ const CONFIG = {
     price: 0,
   },
 
-  DEFAULT_NEW_INGREDIENT_NAME: "Nouvel ingredient",
+  DEFAULT_NEW_INGREDIENT_NAME: "Nouvel ingrédient",
   DEFAULT_COCKTAIL_NAME: "Sans nom",
   DEFAULT_NEW_COCKTAIL_NAME: "Nouveau cocktail",
 
@@ -65,6 +67,32 @@ const CONFIG = {
   PRICE_CLEAR_MISPRICED_MARGIN: 60,
   PRICE_AGGRESSIVE_UPWARD_MOVE: 0.3,
   PRICE_MODERATE_UPWARD_MOVE: 0.2,
+
+  // --- Elasticity model (Cameroon market-calibrated) ---
+  // Price drops unlock pent-up demand more than increases suppress it.
+  // 'increase' = elasticity magnitude when price goes UP (demand goes DOWN).
+  // 'decrease' = elasticity magnitude when price goes DOWN (demand goes UP).
+  ELASTICITY_BY_POPULARITY: {
+    1: { increase: 0.0, decrease: 2.8 },  // Pop-1: don't raise, big unlock on drops
+    2: { increase: 0.5, decrease: 2.2 },  // Pop-2: low stickiness, strong unlock
+    3: { increase: 0.8, decrease: 1.7 },  // Pop-3: moderate both ways
+    4: { increase: 1.0, decrease: 1.4 },  // Pop-4: resilient to small increases
+    5: { increase: 1.2, decrease: 1.1 },  // Pop-5: most resilient, loyal demand base
+  },
+  DEMAND_RESPONSE_MAX_DECREASE: 1.20,  // max +120% orders when price drops
+  DEMAND_RESPONSE_MAX_INCREASE: 0.65,  // max -65% orders when price rises
+
+  // --- Critical underpricing (pop >= 4 AND margin below this threshold) ---
+  // These items need a genuine correction, not a nudge.
+  PRICE_CRITICAL_UNDERPRICED_MARGIN: 40,
+  PRICE_CRITICAL_UNDERPRICED_PUSH: 0.72,  // push 72% toward target (vs 45% default)
+
+  // --- Critical overpricing (pop <= 2 AND margin above this threshold) ---
+  // These items are priced out of the market. Allow real downward moves.
+  PRICE_CRITICAL_OVERPRICED_MARGIN: 88,
+  PRICE_CRITICAL_DOWNWARD_RATE: 0.30,             // allow up to -30% rate
+  PRICE_CRITICAL_FLOOR_RETENTION_RATIO: 0.60,     // floor = 60% of current (vs 90% default)
+
   PSYCHOLOGICAL_PRICE_POINTS: [
     2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000,
     6500, 7000, 7500, 8000, 8500, 9000, 9500, 10000,
@@ -108,15 +136,15 @@ const COLORS = {
 
 function getPopularityTooltip(pop, margin) {
   if (pop >= CONFIG.POPULARITY_HIGH && margin > CONFIG.MARGIN_HIGH) {
-    return "Cocktail tres populaire mais marge trop elevee: risque de perdre des clients sensibles au prix.";
+    return "Cocktail très populaire mais marge trop élevée : risque de perdre des clients sensibles au prix.";
   } else if (pop >= CONFIG.POPULARITY_HIGH && margin < CONFIG.MARGIN_GOOD) {
-    return "Cocktail populaire avec marge encore fragile.";
+    return "Cocktail populaire avec une marge encore fragile.";
   } else if (pop <= 2 && margin > CONFIG.MARGIN_HIGH) {
-    return "Cocktail peu vendu mais tres rentable. A surveiller avant toute hausse.";
+    return "Cocktail peu vendu mais très rentable. À surveiller avant toute hausse.";
   } else if (pop <= 2 && margin < CONFIG.MARGIN_GOOD) {
-    return "Cocktail peu vendu et a faible marge: revue conseillee.";
+    return "Cocktail peu vendu et à faible marge : revue conseillée.";
   }
-  return "Popularite moyenne: a surveiller selon les ventes reelles.";
+  return "Popularité moyenne : à surveiller selon les ventes réelles.";
 }
 
 function getConversionFactor(buyUnit, unitServed) {
